@@ -60,6 +60,13 @@ $app->get("/status/info", function () use ($app) {
     $l_o_tomorrow = ($db->mysqli_prepared_query($query, "ss", array('L', $number)));
     $d_o_tomorrow = ($db->mysqli_prepared_query($query, "ss", array('D', $number)));
 
+
+    $query = file_get_contents("database/sql/give/confirm/get.sql");
+    $b_o_confirm = ($db->mysqli_prepared_query($query, "ss", array('B', $number)));
+    $l_o_confirm = ($db->mysqli_prepared_query($query, "ss", array('L', $number)));
+    $d_o_confirm = ($db->mysqli_prepared_query($query, "ss", array('D', $number)));
+
+
     $query = file_get_contents("database/sql/take/info/q_username.sql");
     $b_q_username = ($db->mysqli_prepared_query($query, "ss", array('B', $number)));
     $l_q_username = ($db->mysqli_prepared_query($query, "ss", array('L', $number)));
@@ -82,6 +89,7 @@ $app->get("/status/info", function () use ($app) {
                 "questions" => intval(empty($b_q_questions) ? 0 : $b_q_questions[0]["questions"]),
                 "o_today" => intval(empty($b_o_today) ? 0 : $b_o_today[0]["o_today"]),
                 "o_tomorrow" => intval(empty($b_o_tomorrow) ? 0 : $b_o_tomorrow[0]["o_tomorrow"]),
+                "o_confirm" => empty($b_o_confirm) ? null : $b_o_confirm[0]["o_confirm"],
                 "offers" => intval(empty($b_offers) ? 0 : $b_offers[0]["offers"]),
             )),
             "l" => (array(
@@ -93,6 +101,7 @@ $app->get("/status/info", function () use ($app) {
                 "questions" => intval(empty($l_q_questions) ? 0 : $l_q_questions[0]["questions"]),
                 "o_today" => intval(empty($l_o_today) ? 0 : $l_o_today[0]["o_today"]),
                 "o_tomorrow" => intval(empty($l_o_tomorrow) ? 0 : $l_o_tomorrow[0]["o_tomorrow"]),
+                "o_confirm" => empty($l_o_confirm) ? null : $l_o_confirm[0]["o_confirm"],
                 "offers" => intval(empty($l_offers) ? 0 : $l_offers[0]["offers"]),
             )),
             "d" => (array(
@@ -104,6 +113,7 @@ $app->get("/status/info", function () use ($app) {
                 "questions" => intval(empty($d_q_questions) ? 0 : $d_q_questions[0]["questions"]),
                 "o_today" => intval(empty($d_o_today) ? 0 : $d_o_today[0]["o_today"]),
                 "o_tomorrow" => intval(empty($d_o_tomorrow) ? 0 : $d_o_tomorrow[0]["o_tomorrow"]),
+                "o_confirm" => empty($d_o_confirm) ? null : $d_o_confirm[0]["o_confirm"],
                 "offers" => intval(empty($d_offers) ? 0 : $d_offers[0]["offers"]),
             )),
         )),
@@ -151,7 +161,7 @@ $app->post("/take/confirm", function () use ($app) {
     $json = $app->request->getBody();
     $post = json_decode($json, true);
     $db = new DbHandler();
-    $query = file_get_contents("database/sql/take/confirm/confirm.sql");
+    $query = file_get_contents("database/sql/take/confirm/set.sql");
     $params = array($username, $post['meal']);
     $result = $db->mysqli_prepared_query($query, "ss", $params)[0];
 });
@@ -205,7 +215,7 @@ $app->post("/give/confirm", function () use ($app) {
     $json = $app->request->getBody();
     $post = json_decode($json, true);
     $db = new DbHandler();
-    $query = file_get_contents("database/sql/give/confirm/confirm.sql");
+    $query = file_get_contents("database/sql/give/confirm/set.sql");
     $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
 });
 
