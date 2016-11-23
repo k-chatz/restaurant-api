@@ -77,11 +77,15 @@ $app->get("/status/info", function () use ($app) {
     $l_q_questions = ($db->mysqli_prepared_query($query, "s", array('L')));
     $d_q_questions = ($db->mysqli_prepared_query($query, "s", array('D')));
 
+    $query = file_get_contents("database/sql/give/info/offersByDate.sql");
+    $offersByDate = ($db->mysqli_prepared_query($query, "s", array($number)));
+
+
     $json = array(
         "time" => $times[0]["time"],
         "meals" => (array(
             "b" => (array(
-                "o_number" => empty($b_o_room) ? null : ( $b_o_room[0]['q_confirm'] == 0 ? '*****' : $b_o_room[0]['o_number']),
+                "o_number" => empty($b_o_room) ? null : ($b_o_room[0]['q_confirm'] == 0 ? '*****' : $b_o_room[0]['o_number']),
                 "sec_left" => intval($times[0]["b_sec_left"]),
                 "q_today" => intval(empty($b_q_today) ? 0 : $b_q_today[0]["q_today"]),
                 "q_tomorrow" => intval(empty($b_q_tomorrow) ? 0 : $b_q_tomorrow[0]["q_tomorrow"]),
@@ -93,7 +97,7 @@ $app->get("/status/info", function () use ($app) {
                 "offers" => intval(empty($b_offers) ? 0 : $b_offers[0]["offers"]),
             )),
             "l" => (array(
-                "o_number" => empty($l_o_room) ? null : ( $l_o_room[0]['q_confirm'] == 0 ? '*****' : $l_o_room[0]['o_number']),
+                "o_number" => empty($l_o_room) ? null : ($l_o_room[0]['q_confirm'] == 0 ? '*****' : $l_o_room[0]['o_number']),
                 "sec_left" => intval($times[0]["l_sec_left"]),
                 "q_today" => intval(empty($l_q_today) ? 0 : $l_q_today[0]["q_today"]),
                 "q_tomorrow" => intval(empty($l_q_tomorrow) ? 0 : $l_q_tomorrow[0]["q_tomorrow"]),
@@ -105,7 +109,7 @@ $app->get("/status/info", function () use ($app) {
                 "offers" => intval(empty($l_offers) ? 0 : $l_offers[0]["offers"]),
             )),
             "d" => (array(
-                "o_number" => empty($d_o_room) ? null : ( $d_o_room[0]['q_confirm'] == 0 ? '*****' : $d_o_room[0]['o_number']),
+                "o_number" => empty($d_o_room) ? null : ($d_o_room[0]['q_confirm'] == 0 ? '*****' : $d_o_room[0]['o_number']),
                 "sec_left" => intval($times[0]["d_sec_left"]),
                 "q_today" => intval(empty($d_q_today) ? 0 : $d_q_today[0]["q_today"]),
                 "q_tomorrow" => intval(empty($d_q_tomorrow) ? 0 : $d_q_tomorrow[0]["q_tomorrow"]),
@@ -121,7 +125,8 @@ $app->get("/status/info", function () use ($app) {
             "b" => $b_priority,
             "l" => $l_priority,
             "d" => $d_priority
-        )
+        ),
+        "offersByDate" => $offersByDate
     );
 
     echo json_encode($json);
@@ -194,7 +199,7 @@ $app->post("/give/more", function () use ($app) {
     $json = $app->request->getBody();
     $post = json_decode($json, true);
     $db = new DbHandler();
-    $query = file_get_contents("database/sql/give/info/more_offers.sql");
+    $query = file_get_contents("database/sql/give/info/offersByDate.sql");
     $params = array($username, $post['meal']);
     $result = $db->mysqli_prepared_query($query, "ss", $params)[0];
 });
@@ -215,8 +220,30 @@ $app->post("/give/confirm", function () use ($app) {
     $json = $app->request->getBody();
     $post = json_decode($json, true);
     $db = new DbHandler();
-    $query = file_get_contents("database/sql/give/confirm/set.sql");
-    $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
+
+    if (isset($post['status']) && isset($post['date'])) {
+        switch ($post['status']) {
+            case -1:
+                /*Add new record for specific date-meal*/
+                $query = file_get_contents("database/sql/give/offer/planned_offer.sql");
+                $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $post['date']))[0];
+                break;
+            case 0:
+                /*Update value of 'confirmed' field and set to true for record with specific date-meal*/
+                $query = file_get_contents("database/sql/give/confirm/planned_set.sql");
+                $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $post['date']))[0];
+                break;
+            case 1:
+                /*Delete record with specific date-meal (cancel query)*/
+                $query = file_get_contents("database/sql/give/cancel/planned_cancel.sql");
+                $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $post['date']))[0];
+                break;
+        }
+    } else {
+        $query = file_get_contents("database/sql/give/confirm/set.sql");
+        $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
+    }
+
 });
 
 $app->post("/give/reject", function () use ($app) {
@@ -228,8 +255,6 @@ $app->post("/give/reject", function () use ($app) {
     $query = file_get_contents("database/sql/give/cancel/cancel.sql");
     $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
 });
-
-
 
 
 //require_once 'authentication.php';
@@ -267,7 +292,6 @@ $app->post("/give/reject", function () use ($app) {
  * echo json_encode($response);
  * }
  */
-
 
 
 $app->run();
