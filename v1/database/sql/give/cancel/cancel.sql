@@ -2,25 +2,26 @@ DELETE
 FROM
 	offers
 WHERE
-	o_number = ?
+	o_number = ? AND
+	meal = ?
 AND (
 	(
 		date = ADDDATE(CURRENT_DATE, INTERVAL - 1 DAY)
 		AND (
 			(
-				TIMEDIFF(time, '09:30:00.0') > 0
+				TIMEDIFF(time, '09:30:00.0') >= 0
 				AND meal = 'B'
 			)
 			OR (
-				TIMEDIFF(time, '15:30:00.0') > 0
+				TIMEDIFF(time, '15:30:00.0') >= 0
 				AND meal = 'L'
 			)
 			OR (
-				TIMEDIFF(time, '20:15:00.0') > 0
+				TIMEDIFF(time, '20:15:00.0') >= 0
 				AND meal = 'D'
 			)
 		)
 	)
 	OR date = CURRENT_DATE
 )
-AND meal = ?
+

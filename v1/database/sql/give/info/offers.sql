@@ -13,6 +13,8 @@ WHERE
 AND r.o_date IS NULL
 AND r.o_meal IS NULL
 AND r.o_confirmed IS NULL
+AND o.meal = ?
+AND o.o_number != ?
 AND (
 	(
 		o.date = ADDDATE(
@@ -79,4 +81,4 @@ AND (
 		)
 	)
 )
-AND o.meal = ?
+

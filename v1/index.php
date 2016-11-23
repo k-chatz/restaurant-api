@@ -39,9 +39,9 @@ $app->get("/status/info", function () use ($app) {
     $d_o_room = ($db->mysqli_prepared_query($query, "ss", array('D', $username)));
 
     $query = file_get_contents("database/sql/give/info/offers.sql");
-    $b_offers = ($db->mysqli_prepared_query($query, "s", array('B')));
-    $l_offers = ($db->mysqli_prepared_query($query, "s", array('L')));
-    $d_offers = ($db->mysqli_prepared_query($query, "s", array('D')));
+    $b_offers = ($db->mysqli_prepared_query($query, "ss", array('B', $number)));
+    $l_offers = ($db->mysqli_prepared_query($query, "ss", array('L', $number)));
+    $d_offers = ($db->mysqli_prepared_query($query, "ss", array('D', $number)));
 
     $query = file_get_contents("database/sql/take/info/priority.sql");
     $b_priority = ($db->mysqli_prepared_query($query, "s", array('B')));
