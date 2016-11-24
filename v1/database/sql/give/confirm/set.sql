@@ -5,5 +5,5 @@ WHERE
 		`o_number` = ?
 	)
 AND (`meal` = ?)
-AND (`date` = CURRENT_DATE)
+AND (`date` = ?)
 LIMIT 1

@@ -2,12 +2,14 @@ INSERT INTO `offers` (
 	`o_number`,
 	`meal`,
 	`date`,
-	`time`
+	`confirmed`,
+	`moment`
 )
 VALUES
 	(
 		?,
 		?,
 		?,
-		CURRENT_TIME
+		0,
+		NOW()
 	)
