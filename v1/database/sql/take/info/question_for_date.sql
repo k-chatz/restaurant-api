@@ -1,11 +1,11 @@
 #QUERY OK
 
-UPDATE `questions`
-SET `confirmed` = TRUE
+SELECT
+	COUNT(q.q_username) AS 'q_question'
+FROM
+	questions AS q
 WHERE
-`q_username` = ?
-AND `meal` = ?
-AND `date` = (
+q.date = (
 	CASE
 	WHEN `meal` = 'B' THEN
 	IF (TIMEDIFF('09:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
@@ -15,4 +15,5 @@ AND `date` = (
 		IF (TIMEDIFF('20:15:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
 	END
 )
-LIMIT 1
+AND q.meal = ?
+AND q.q_username = ?

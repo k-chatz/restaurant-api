@@ -11,70 +11,15 @@ WHERE
 	r.q_username IS NULL
 AND r.q_date IS NULL
 AND r.q_meal IS NULL
-AND (
-	(
-		q.date = ADDDATE(
-			CURRENT_DATE (),
-			INTERVAL - 1 DAY
-		)
-		AND (
-			(
-			  TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0 AND
-				TIMEDIFF(q.time, '09:30:00.0') >= 0
-				AND q.meal = 'B'
-			)
-			OR (
-				TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0 AND
-				TIMEDIFF(q.time, '15:30:00.0') >= 0
-				AND q.meal = 'L'
-			)
-			OR (
-				TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0 AND
-				TIMEDIFF(q.time, '20:15:00.0') >= 0
-				AND q.meal = 'D'
-			)
-		)
-	)
-	OR (
-		q.date = CURRENT_DATE
-		AND (
-			(
-				(
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-					AND TIMEDIFF(q.time, '09:30:00.0') < 0
-					AND q.meal = 'B'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') >= 0
-					AND TIMEDIFF(q.time, '09:30:00.0') >= 0
-					AND q.meal = 'B'
-				)
-			)
-			OR (
-				(
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-					AND TIMEDIFF(q.time, '15:30:00.0') < 0
-					AND q.meal = 'L'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') >= 0
-					AND TIMEDIFF(q.time, '15:30:00.0') >= 0
-					AND q.meal = 'L'
-				)
-			)
-			OR (
-				(
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-					AND TIMEDIFF(q.time, '20:15:00.0') < 0
-					AND q.meal = 'D'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') >= 0
-					AND TIMEDIFF(q.time, '20:15:00.0') >= 0
-					AND q.meal = 'D'
-				)
-			)
-		)
-	)
-)
 AND q.meal = ?
+AND q.q_username != ?
+AND q.date = (
+	CASE
+	WHEN `meal` = 'B' THEN
+	IF (TIMEDIFF('09:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	WHEN `meal` = 'L' THEN
+	IF (TIMEDIFF('15:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	WHEN `meal` = 'D' THEN
+		IF (TIMEDIFF('20:15:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	END
+)

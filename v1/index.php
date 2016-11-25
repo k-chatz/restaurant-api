@@ -29,17 +29,10 @@ $app->get("/status/info", function () use ($app) {
     $d_date = $d_sec_left < 0 ? date('Y-m-d', strtotime(date("Y-m-d") . " + 1 day")) : date("Y-m-d");
 
     /*Take tab queries*/
-    $query = file_get_contents("database/sql/take/info/question_today.sql");
-    $b_q_today = ($db->mysqli_prepared_query($query, "ss", array('B', $username)));
-    $l_q_today = ($db->mysqli_prepared_query($query, "ss", array('L', $username)));
-    $d_q_today = ($db->mysqli_prepared_query($query, "ss", array('D', $username)));
-
-    $query = file_get_contents("database/sql/take/info/question_tomorrow.sql");
-    $b_q_tomorrow = ($db->mysqli_prepared_query($query, "ss", array('B', $username)));
-    $l_q_tomorrow = ($db->mysqli_prepared_query($query, "ss", array('L', $username)));
-    $d_q_tomorrow = ($db->mysqli_prepared_query($query, "ss", array('D', $username)));
-
-
+    $query = file_get_contents("database/sql/take/info/question_for_date.sql");
+    $b_q_question = ($db->mysqli_prepared_query($query, "ss", array('B', $username)));
+    $l_q_question = ($db->mysqli_prepared_query($query, "ss", array('L', $username)));
+    $d_q_question = ($db->mysqli_prepared_query($query, "ss", array('D', $username)));
 
     /*Give*/
     $query = file_get_contents("database/sql/give/info/offer_number.sql");
@@ -79,9 +72,9 @@ $app->get("/status/info", function () use ($app) {
     $d_q_username = ($db->mysqli_prepared_query($query, "ss", array('D', $number)));
 
     $query = file_get_contents("database/sql/take/info/questions.sql");
-    $b_q_questions = ($db->mysqli_prepared_query($query, "s", array('B')));
-    $l_q_questions = ($db->mysqli_prepared_query($query, "s", array('L')));
-    $d_q_questions = ($db->mysqli_prepared_query($query, "s", array('D')));
+    $b_q_questions = ($db->mysqli_prepared_query($query, "ss", array('B', $username)));
+    $l_q_questions = ($db->mysqli_prepared_query($query, "ss", array('L', $username)));
+    $d_q_questions = ($db->mysqli_prepared_query($query, "ss", array('D', $username)));
 
     $query = file_get_contents("database/sql/give/info/planned_offers.sql");
     $offersByDate = ($db->mysqli_prepared_query($query, "s", array($number)));
@@ -93,8 +86,7 @@ $app->get("/status/info", function () use ($app) {
             "b" => (array(
                 "o_number" => empty($b_o_room) ? null : ($b_o_room[0]['q_confirm'] == 0 ? '*****' : $b_o_room[0]['o_number']),
                 "sec_left" => $b_sec_left,
-                "q_today" => intval(empty($b_q_today) ? 0 : $b_q_today[0]["q_today"]),
-                "q_tomorrow" => intval(empty($b_q_tomorrow) ? 0 : $b_q_tomorrow[0]["q_tomorrow"]),
+                "q_question" => intval(empty($b_q_question) ? 0 : $b_q_question[0]["q_question"]),
                 "q_username" => empty($b_q_username) ? null : $b_q_username[0]['q_username'],
                 "questions" => intval(empty($b_q_questions) ? 0 : $b_q_questions[0]["questions"]),
                 "o_offer" => intval(empty($b_o_offer) ? 0 : $b_o_offer[0]["o_offer"]),
@@ -104,8 +96,7 @@ $app->get("/status/info", function () use ($app) {
             "l" => (array(
                 "o_number" => empty($l_o_room) ? null : ($l_o_room[0]['q_confirm'] == 0 ? '*****' : $l_o_room[0]['o_number']),
                 "sec_left" => $l_sec_left,
-                "q_today" => intval(empty($l_q_today) ? 0 : $l_q_today[0]["q_today"]),
-                "q_tomorrow" => intval(empty($l_q_tomorrow) ? 0 : $l_q_tomorrow[0]["q_tomorrow"]),
+                "q_question" => intval(empty($l_q_question) ? 0 : $l_q_question[0]["q_question"]),
                 "q_username" => empty($l_q_username) ? null : $l_q_username[0]['q_username'],
                 "questions" => intval(empty($l_q_questions) ? 0 : $l_q_questions[0]["questions"]),
                 "o_offer" => intval(empty($l_o_offer) ? 0 : $l_o_offer[0]["o_offer"]),
@@ -115,8 +106,7 @@ $app->get("/status/info", function () use ($app) {
             "d" => (array(
                 "o_number" => empty($d_o_room) ? null : ($d_o_room[0]['q_confirm'] == 0 ? '*****' : $d_o_room[0]['o_number']),
                 "sec_left" => $d_sec_left,
-                "q_today" => intval(empty($d_q_today) ? 0 : $d_q_today[0]["q_today"]),
-                "q_tomorrow" => intval(empty($d_q_tomorrow) ? 0 : $d_q_tomorrow[0]["q_tomorrow"]),
+                "q_question" => intval(empty($d_q_question) ? 0 : $d_q_question[0]["q_question"]),
                 "q_username" => empty($d_q_username) ? null : $d_q_username[0]['q_username'],
                 "questions" => intval(empty($d_q_questions) ? 0 : $d_q_questions[0]["questions"]),
                 "o_offer" => intval(empty($d_o_offer) ? 0 : $d_o_offer[0]["o_offer"]),
@@ -145,13 +135,11 @@ $app->post("/take/question", function () use ($app) {
 
     /*Delete expired questions for current user and current meal*/
     $query = file_get_contents("database/sql/take/question/delete_expired.sql");
-    $params = array($username, $post['meal']);
-    $db->mysqli_prepared_query($query, "ss", $params)[0];
+    $db->mysqli_prepared_query($query, "ss", array($username, $post['meal']))[0];
 
     /*Insert question*/
     $query = file_get_contents("database/sql/take/question/question.sql");
-    $params = array($username, $post['meal']);
-    $db->mysqli_prepared_query($query, "ss", $params)[0];
+    $db->mysqli_prepared_query($query, "ss", array($username, $post['meal']))[0];
 });
 
 $app->post("/take/cancel", function () use ($app) {
@@ -160,8 +148,7 @@ $app->post("/take/cancel", function () use ($app) {
     $post = json_decode($json, true);
     $db = new DbHandler();
     $query = file_get_contents("database/sql/take/cancel/cancel.sql");
-    $params = array($username, $post['meal']);
-    $result = $db->mysqli_prepared_query($query, "ss", $params)[0];
+    $result = $db->mysqli_prepared_query($query, "ss", array($username, $post['meal']))[0];
 });
 
 $app->post("/take/confirm", function () use ($app) {
@@ -170,8 +157,7 @@ $app->post("/take/confirm", function () use ($app) {
     $post = json_decode($json, true);
     $db = new DbHandler();
     $query = file_get_contents("database/sql/take/confirm/set.sql");
-    $params = array($username, $post['meal']);
-    $result = $db->mysqli_prepared_query($query, "ss", $params)[0];
+    $result = $db->mysqli_prepared_query($query, "ss", array($username, $post['meal']))[0];
 });
 
 $app->post("/take/reject", function () use ($app) {
@@ -180,8 +166,7 @@ $app->post("/take/reject", function () use ($app) {
     $post = json_decode($json, true);
     $db = new DbHandler();
     $query = file_get_contents("database/sql/take/cancel/cancel.sql");
-    $params = array($username, $post['meal']);
-    $result = $db->mysqli_prepared_query($query, "ss", $params)[0];
+    $result = $db->mysqli_prepared_query($query, "ss", array($username, $post['meal']))[0];
 });
 
 

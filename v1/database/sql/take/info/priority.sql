@@ -1,98 +1,30 @@
+#QUERY OK
+
 SELECT
-	users.`name`,
-	users.surname,
-	CASE q.date
-WHEN CURRENT_DATE THEN
-	'Today'
-WHEN ADDDATE(
-	CURRENT_DATE (),
-	INTERVAL - 1 DAY
-) THEN
-	'Yesterday'
-ELSE
-	'Other day'
-END AS 'day',
- q.time
+	u.name,
+	u.surname,
+	q.moment
 FROM
 	questions AS q
-LEFT JOIN reservations AS r ON r.q_username = q.q_username
+LEFT JOIN reservations AS r ON
+r.q_username = q.q_username
 AND r.q_date = q.date
 AND r.q_meal = q.meal
-INNER JOIN users ON q.q_username = users.username
+INNER JOIN users AS u ON q.q_username = u.username
 WHERE
-	(
-		(
-			q.date = ADDDATE(
-				CURRENT_DATE (),
-				INTERVAL - 1 DAY
-			)
-			AND (
-				(
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-					AND TIMEDIFF(q.time, '09:30:00.0') >= 0
-					AND q.meal = 'B'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-					AND TIMEDIFF(q.time, '15:30:00.0') >= 0
-					AND q.meal = 'L'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-					AND TIMEDIFF(q.time, '20:15:00.0') >= 0
-					AND q.meal = 'D'
-				)
-			)
-		)
-		OR (
-			q.date = CURRENT_DATE
-			AND (
-				(
-					(
-						TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-						AND TIMEDIFF(q.time, '09:30:00.0') < 0
-						AND q.meal = 'B'
-					)
-					OR (
-						TIMEDIFF(CURRENT_TIME, '09:30:00.0') >= 0
-						AND TIMEDIFF(q.time, '09:30:00.0') >= 0
-						AND q.meal = 'B'
-					)
-				)
-				OR (
-					(
-						TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-						AND TIMEDIFF(q.time, '15:30:00.0') < 0
-						AND q.meal = 'L'
-					)
-					OR (
-						TIMEDIFF(CURRENT_TIME, '15:30:00.0') >= 0
-						AND TIMEDIFF(q.time, '15:30:00.0') >= 0
-						AND q.meal = 'L'
-					)
-				)
-				OR (
-					(
-						TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-						AND TIMEDIFF(q.time, '20:15:00.0') < 0
-						AND q.meal = 'D'
-					)
-					OR (
-						TIMEDIFF(CURRENT_TIME, '20:15:00.0') >= 0
-						AND TIMEDIFF(q.time, '20:15:00.0') >= 0
-						AND q.meal = 'D'
-					)
-				)
-			)
-		)
-	)
-AND (
-	r.o_confirmed = 0
-	OR r.o_confirmed IS NULL
+q.meal = ?
+AND r.q_username IS NULL
+AND r.q_date IS NULL
+AND r.q_meal IS NULL
+AND q.date = (
+	CASE
+	WHEN q.meal = 'B' THEN
+	IF (TIMEDIFF('09:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	WHEN q.meal = 'L' THEN
+	IF (TIMEDIFF('15:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	WHEN q.meal = 'D' THEN
+		IF (TIMEDIFF('20:15:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	END
 )
-AND q.meal = ?
-GROUP BY
-	q.q_username
 ORDER BY
-	q.date ASC,
-	q.time ASC
+	q.moment ASC

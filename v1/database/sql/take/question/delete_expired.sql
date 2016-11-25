@@ -4,71 +4,15 @@ DELETE
 FROM
 	questions
 WHERE
-	! (
-		(
-			date = ADDDATE(
-				CURRENT_DATE (),
-				INTERVAL - 1 DAY
-			)
-			AND (
-				(
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-					AND TIMEDIFF(time, '09:30:00.0') >= 0
-					AND meal = 'B'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-					AND TIMEDIFF(time, '15:30:00.0') >= 0
-					AND meal = 'L'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-					AND TIMEDIFF(time, '20:15:00.0') >= 0
-					AND meal = 'D'
-				)
-			)
-		)
-		OR (
-			date = CURRENT_DATE
-			AND (
-				(
-					(
-						TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-						AND TIMEDIFF(time, '09:30:00.0') < 0
-						AND meal = 'B'
-					)
-					OR (
-						TIMEDIFF(CURRENT_TIME, '09:30:00.0') >= 0
-						AND TIMEDIFF(time, '09:30:00.0') >= 0
-						AND meal = 'B'
-					)
-				)
-				OR (
-					(
-						TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-						AND TIMEDIFF(time, '15:30:00.0') < 0
-						AND meal = 'L'
-					)
-					OR (
-						TIMEDIFF(CURRENT_TIME, '15:30:00.0') >= 0
-						AND TIMEDIFF(time, '15:30:00.0') >= 0
-						AND meal = 'L'
-					)
-				)
-				OR (
-					(
-						TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-						AND TIMEDIFF(time, '20:15:00.0') < 0
-						AND meal = 'D'
-					)
-					OR (
-						TIMEDIFF(CURRENT_TIME, '20:15:00.0') >= 0
-						AND TIMEDIFF(time, '20:15:00.0') >= 0
-						AND meal = 'D'
-					)
-				)
-			)
-		)
-	)
+date !=(
+  CASE
+  WHEN `meal` = 'B' THEN
+  IF (TIMEDIFF('09:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+  WHEN `meal` = 'L' THEN
+  IF (TIMEDIFF('15:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+  WHEN `meal` = 'D' THEN
+    IF (TIMEDIFF('20:15:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+  END
+)
 AND q_username = ?
 AND meal = ?
