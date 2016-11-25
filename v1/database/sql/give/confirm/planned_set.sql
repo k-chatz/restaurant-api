@@ -1,3 +1,5 @@
+#QUERY OK
+
 UPDATE `offers`
 SET `confirmed` = TRUE
 WHERE

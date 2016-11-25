@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 100113
 File Encoding         : 65001
 
-Date: 2016-11-17 14:04:50
+Date: 2016-11-25 08:10:52
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -55,12 +55,12 @@ CREATE TABLE `offers` (
   `o_number` varchar(6) NOT NULL,
   `meal` varchar(1) NOT NULL,
   `date` date NOT NULL,
-  `time` time(1) NOT NULL,
   `confirmed` tinyint(1) unsigned zerofill NOT NULL DEFAULT '0',
+  `moment` datetime(1) NOT NULL DEFAULT '0000-00-00 00:00:00.0',
   PRIMARY KEY (`o_number`,`date`,`meal`),
   KEY `fk_serving_users_idx` (`o_number`),
   KEY `fk_offers_meal_types` (`meal`),
-  KEY `o_number` (`o_number`,`meal`,`date`,`confirmed`) USING BTREE,
+  KEY `o_number_2` (`o_number`,`meal`,`date`),
   CONSTRAINT `fk_offers_meal_types` FOREIGN KEY (`meal`) REFERENCES `meal_types` (`type`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_offers_users` FOREIGN KEY (`o_number`) REFERENCES `users` (`number`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -73,8 +73,8 @@ CREATE TABLE `questions` (
   `q_username` varchar(15) NOT NULL,
   `meal` varchar(1) NOT NULL,
   `date` date NOT NULL,
-  `time` time(1) NOT NULL,
   `confirmed` tinyint(1) unsigned zerofill NOT NULL DEFAULT '0',
+  `moment` datetime(1) NOT NULL DEFAULT '0000-00-00 00:00:00.0',
   PRIMARY KEY (`q_username`,`date`,`meal`),
   KEY `fk_questions_meal_types` (`meal`),
   KEY `q_username` (`q_username`,`meal`,`date`),
@@ -90,18 +90,14 @@ CREATE TABLE `reservations` (
   `q_username` varchar(15) NOT NULL,
   `q_meal` varchar(1) NOT NULL,
   `q_date` date NOT NULL,
-  `q_time` time(1) NOT NULL,
   `o_number` varchar(6) NOT NULL,
   `o_meal` varchar(1) NOT NULL,
   `o_date` date NOT NULL,
-  `o_time` time(1) NOT NULL,
-  `o_confirmed` tinyint(1) unsigned zerofill NOT NULL,
-  `r_date` date NOT NULL,
-  `r_time` time(1) NOT NULL,
+  `moment` datetime(1) NOT NULL,
   PRIMARY KEY (`q_username`,`q_meal`,`q_date`,`o_number`,`o_meal`,`o_date`),
-  KEY `fk_R_offers1_idx` (`o_number`,`o_date`,`o_meal`,`o_confirmed`),
-  KEY `fk_reservations_offers` (`o_number`,`o_meal`,`o_date`,`o_confirmed`),
-  CONSTRAINT `fk_reservations_offers` FOREIGN KEY (`o_number`, `o_meal`, `o_date`, `o_confirmed`) REFERENCES `offers` (`o_number`, `meal`, `date`, `confirmed`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE KEY `fk_R_offers1_idx` (`o_number`,`o_date`,`o_meal`) USING BTREE,
+  UNIQUE KEY `fk_reservations_offers` (`o_number`,`o_meal`,`o_date`) USING BTREE,
+  CONSTRAINT `fk_reservations_offers` FOREIGN KEY (`o_number`, `o_meal`, `o_date`) REFERENCES `offers` (`o_number`, `meal`, `date`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_reservations_questions` FOREIGN KEY (`q_username`, `q_meal`, `q_date`) REFERENCES `questions` (`q_username`, `meal`, `date`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -153,133 +149,63 @@ DROP TRIGGER IF EXISTS `reservation1`;
 DELIMITER ;;
 CREATE TRIGGER `reservation1` AFTER INSERT ON `offers` FOR EACH ROW BEGIN
 DECLARE done INT DEFAULT FALSE;
-
 DECLARE Username VARCHAR (15);
 DECLARE Date date;
-DECLARE Time time;
 DECLARE Meal VARCHAR (1);
+DECLARE Moment DATETIME DEFAULT NOW();
 
 DECLARE c_first_available_question CURSOR FOR SELECT
 	q.q_username,
 	q.date,
-	q.time,
-	q.meal
+	q.meal,
+	q.moment
 FROM
 	questions AS q
 LEFT JOIN reservations AS r ON r.q_username = q.q_username
 AND r.q_date = q.date
 AND r.q_meal = q.meal
+
 WHERE
-	(
-		(
-			r.q_username IS NULL
-			AND r.q_date IS NULL
-			AND r.q_meal IS NULL
-		)
-		OR (
-			r.q_username = q.q_username
-			AND r.q_date = q.date
-			AND r.q_meal = q.meal
-			AND r.o_confirmed = 0
-		)
-	)
-AND (
-	(
-		q.date = ADDDATE(
-			CURRENT_DATE (),
-			INTERVAL - 1 DAY
-		)
-		AND (
-			(
-				TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-				AND TIMEDIFF(q.time, '09:30:00.0') >= 0
-				AND q.meal = 'B'
-			)
-			OR (
-				TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-				AND TIMEDIFF(q.time, '15:30:00.0') >= 0
-				AND q.meal = 'L'
-			)
-			OR (
-				TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-				AND TIMEDIFF(q.time, '20:15:00.0') >= 0
-				AND q.meal = 'D'
-			)
-		)
-	)
-	OR (
-		q.date = CURRENT_DATE
-		AND (
-			(
-				(
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-					AND TIMEDIFF(q.time, '09:30:00.0') < 0
-					AND q.meal = 'B'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') >= 0
-					AND TIMEDIFF(q.time, '09:30:00.0') >= 0
-					AND q.meal = 'B'
-				)
-			)
-			OR (
-				(
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-					AND TIMEDIFF(q.time, '15:30:00.0') < 0
-					AND q.meal = 'L'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') >= 0
-					AND TIMEDIFF(q.time, '15:30:00.0') >= 0
-					AND q.meal = 'L'
-				)
-			)
-			OR (
-				(
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-					AND TIMEDIFF(q.time, '20:15:00.0') < 0
-					AND q.meal = 'D'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') >= 0
-					AND TIMEDIFF(q.time, '20:15:00.0') >= 0
-					AND q.meal = 'D'
-				)
-			)
-		)
-	)
+r.q_username IS NULL
+AND r.q_date IS NULL
+AND r.q_meal IS NULL
+
+AND
+q.date = (
+	CASE
+	WHEN q.meal = 'B' THEN
+	IF (TIMEDIFF('09:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	WHEN q.meal = 'L' THEN
+	IF (TIMEDIFF('15:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	WHEN q.meal = 'D' THEN
+		IF (TIMEDIFF('20:15:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	END
 )
+
 AND q.meal = NEW.meal
-ORDER BY
-	q.date,
-	q.time ASC
+ORDER BY q.moment ASC
 LIMIT 1;
 
 DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
 OPEN c_first_available_question;
 
-FETCH c_first_available_question INTO Username, Date, Time, Meal;
+FETCH c_first_available_question INTO Username, Date, Meal, Moment;
 
 IF done = FALSE AND NEW.confirmed = TRUE THEN
 	INSERT INTO `reservations`
 VALUES(
 		Username,
-        		NEW.meal,
+        		Meal,
 		Date,
-		Time,
 		NEW.o_number,
-        		NEW.meal,
-		NEW.date,
-		NEW.time,
-		NEW.confirmed,
-		NEW.date,
-		NEW.time
+        		Meal,
+		Date,
+		NOW()
 	);
 END IF;
 
 CLOSE c_first_available_question;
-
 END
 ;;
 DELIMITER ;
@@ -287,133 +213,63 @@ DROP TRIGGER IF EXISTS `reservation2`;
 DELIMITER ;;
 CREATE TRIGGER `reservation2` AFTER UPDATE ON `offers` FOR EACH ROW BEGIN
 DECLARE done INT DEFAULT FALSE;
-
 DECLARE Username VARCHAR (15);
 DECLARE Date date;
-DECLARE Time time;
 DECLARE Meal VARCHAR (1);
+DECLARE Moment DATETIME DEFAULT NOW();
 
 DECLARE c_first_available_question CURSOR FOR SELECT
 	q.q_username,
 	q.date,
-	q.time,
-	q.meal
+	q.meal,
+	q.moment
 FROM
 	questions AS q
 LEFT JOIN reservations AS r ON r.q_username = q.q_username
 AND r.q_date = q.date
 AND r.q_meal = q.meal
+
 WHERE
-	(
-		(
-			r.q_username IS NULL
-			AND r.q_date IS NULL
-			AND r.q_meal IS NULL
-		)
-		OR (
-			r.q_username = q.q_username
-			AND r.q_date = q.date
-			AND r.q_meal = q.meal
-			AND r.o_confirmed = 0
-		)
-	)
-AND (
-	(
-		q.date = ADDDATE(
-			CURRENT_DATE (),
-			INTERVAL - 1 DAY
-		)
-		AND (
-			(
-				TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-				AND TIMEDIFF(q.time, '09:30:00.0') >= 0
-				AND q.meal = 'B'
-			)
-			OR (
-				TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-				AND TIMEDIFF(q.time, '15:30:00.0') >= 0
-				AND q.meal = 'L'
-			)
-			OR (
-				TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-				AND TIMEDIFF(q.time, '20:15:00.0') >= 0
-				AND q.meal = 'D'
-			)
-		)
-	)
-	OR (
-		q.date = CURRENT_DATE
-		AND (
-			(
-				(
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-					AND TIMEDIFF(q.time, '09:30:00.0') < 0
-					AND q.meal = 'B'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') >= 0
-					AND TIMEDIFF(q.time, '09:30:00.0') >= 0
-					AND q.meal = 'B'
-				)
-			)
-			OR (
-				(
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-					AND TIMEDIFF(q.time, '15:30:00.0') < 0
-					AND q.meal = 'L'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') >= 0
-					AND TIMEDIFF(q.time, '15:30:00.0') >= 0
-					AND q.meal = 'L'
-				)
-			)
-			OR (
-				(
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-					AND TIMEDIFF(q.time, '20:15:00.0') < 0
-					AND q.meal = 'D'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') >= 0
-					AND TIMEDIFF(q.time, '20:15:00.0') >= 0
-					AND q.meal = 'D'
-				)
-			)
-		)
-	)
+r.q_username IS NULL
+AND r.q_date IS NULL
+AND r.q_meal IS NULL
+
+AND
+q.date = (
+	CASE
+	WHEN q.meal = 'B' THEN
+	IF (TIMEDIFF('09:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	WHEN q.meal = 'L' THEN
+	IF (TIMEDIFF('15:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	WHEN q.meal = 'D' THEN
+		IF (TIMEDIFF('20:15:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	END
 )
+
 AND q.meal = NEW.meal
-ORDER BY
-	q.date,
-	q.time ASC
+ORDER BY q.moment ASC
 LIMIT 1;
 
 DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
 OPEN c_first_available_question;
 
-FETCH c_first_available_question INTO Username, Date, Time, Meal;
+FETCH c_first_available_question INTO Username, Date, Meal, Moment;
 
 IF done = FALSE AND NEW.confirmed = TRUE THEN
 	INSERT INTO `reservations`
 VALUES(
 		Username,
-        		NEW.meal,
+        		Meal,
 		Date,
-		Time,
 		NEW.o_number,
-        		NEW.meal,
-		NEW.date,
-		NEW.time,
-		NEW.confirmed,
-		NEW.date,
-		NEW.time
+        		Meal,
+		Date,
+		NOW()
 	);
 END IF;
 
 CLOSE c_first_available_question;
-
 END
 ;;
 DELIMITER ;
@@ -424,100 +280,63 @@ DECLARE done INT DEFAULT FALSE;
 
 DECLARE Number VARCHAR (6);
 DECLARE Date date;
-DECLARE Time time;
 DECLARE Confirmed tinyint(1);
+DECLARE Moment DATETIME DEFAULT NOW();
 
 DECLARE Q_STEP_1 CURSOR FOR SELECT
 	o.o_number,
 	o.date,
-	o.time,
-	o.confirmed
+	o.confirmed,
+	o.moment
 FROM
 	offers AS o
 LEFT JOIN reservations AS r ON r.o_number = o.o_number
 AND r.o_date = o.date
 AND r.o_meal = o.meal
+LEFT JOIN users AS u ON u.number = o.o_number
 WHERE
 	(
 		r.o_number IS NULL
 		AND r.o_date IS NULL
 		AND r.o_meal IS NULL
 	)
+AND u.username != NEW.q_username
 AND (
-	(
-		o.date = ADDDATE(
-			CURRENT_DATE (),
-			INTERVAL - 1 DAY
-		)
-		AND (
-			(
-				TIMEDIFF(o.time, '09:30:00.0') >= 0
-				AND o.meal = 'B'
-			)
-			OR (
-				TIMEDIFF(o.time, '15:30:00.0') >= 0
-				AND o.meal = 'L'
-			)
-			OR (
-				TIMEDIFF(o.time, '20:15:00.0') >= 0
-				AND o.meal = 'D'
-			)
-		)
-	)
-	OR (
+	CASE
+	WHEN o.meal = 'B' THEN
+
+	IF (
+		TIMEDIFF('09:30:00.0', TIME(NOW())) < 0,
+		o.date = ADDDATE(CURRENT_DATE, INTERVAL 1 DAY),
 		o.date = CURRENT_DATE
-		AND (
-			(
-				(
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-					AND TIMEDIFF(o.time, '09:30:00.0') < 0
-					AND o.meal = 'B'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') >= 0
-					AND TIMEDIFF(o.time, '09:30:00.0') >= 0
-					AND o.meal = 'B'
-				)
-			)
-			OR (
-				(
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-					AND TIMEDIFF(o.time, '15:30:00.0') < 0
-					AND o.meal = 'L'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') >= 0
-					AND TIMEDIFF(o.time, '15:30:00.0') >= 0
-					AND o.meal = 'L'
-				)
-			)
-			OR (
-				(
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-					AND TIMEDIFF(o.time, '20:15:00.0') < 0
-					AND o.meal = 'D'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') >= 0
-					AND TIMEDIFF(o.time, '20:15:00.0') >= 0
-					AND o.meal = 'D'
-				)
-			)
-		)
 	)
+	WHEN o.meal = 'L' THEN
+
+	IF (
+		TIMEDIFF('15:30:00.0', TIME(NOW())) < 0,
+		o.date = ADDDATE(CURRENT_DATE, INTERVAL 1 DAY),
+		o.date = CURRENT_DATE
+	)
+	WHEN o.meal = 'D' THEN
+
+	IF (
+		TIMEDIFF('20:15:00.0', TIME(NOW())) < 0,
+		o.date = ADDDATE(CURRENT_DATE, INTERVAL 1 DAY),
+		o.date = CURRENT_DATE
+	)
+	END
 )
 AND o.meal = NEW.meal
 AND o.confirmed = 1
 ORDER BY
-	o.date,
-	o.time ASC
+	o.moment ASC
 LIMIT 1;
 
 DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
 OPEN Q_STEP_1;
 
-FETCH Q_STEP_1 INTO Number, Date, Time, Confirmed;
+FETCH Q_STEP_1 INTO Number, Date, Confirmed, Moment;
 
 IF done = FALSE THEN
 
@@ -525,14 +344,10 @@ INSERT INTO `reservations`  VALUES(
 		NEW.q_username,
         		NEW.meal,
 		NEW.date,
-		NEW.time,
 		Number,
         		NEW.meal,
 		Date,
-		Time,
-		Confirmed,
-		NEW.date,
-		NEW.time
+		NOW()
 	);
 
 END IF;

@@ -41,11 +41,9 @@ $app->get("/status/info", function () use ($app) {
     $d_o_room = ($db->mysqli_prepared_query($query, "ss", array('D', $username)));
 
     $query = file_get_contents("database/sql/give/info/offers_count.sql");
-    $b_offers = ($db->mysqli_prepared_query($query, "sss", array('B', $number, $b_date)));
-    $l_offers = ($db->mysqli_prepared_query($query, "sss", array('L', $number, $l_date)));
-    $d_offers = ($db->mysqli_prepared_query($query, "sss", array('D', $number, $d_date)));
-
-
+    $b_offers = ($db->mysqli_prepared_query($query, "ss", array('B', $number)));
+    $l_offers = ($db->mysqli_prepared_query($query, "ss", array('L', $number)));
+    $d_offers = ($db->mysqli_prepared_query($query, "ss", array('D', $number)));
 
 
     $query = file_get_contents("database/sql/take/info/priority.sql");
@@ -55,9 +53,9 @@ $app->get("/status/info", function () use ($app) {
 
     /*Give tab queries*/
     $query = file_get_contents("database/sql/give/info/offer_for_date.sql");
-    $b_o_offer = ($db->mysqli_prepared_query($query, "sss", array($b_date, 'B', $number)));
-    $l_o_offer = ($db->mysqli_prepared_query($query, "sss", array($l_date, 'L', $number)));
-    $d_o_offer = ($db->mysqli_prepared_query($query, "sss", array($d_date, 'D', $number)));
+    $b_o_offer = ($db->mysqli_prepared_query($query, "ss", array('B', $number)));
+    $l_o_offer = ($db->mysqli_prepared_query($query, "ss", array('L', $number)));
+    $d_o_offer = ($db->mysqli_prepared_query($query, "ss", array('D', $number)));
 
 
     $query = file_get_contents("database/sql/give/confirm/get.sql");
@@ -177,27 +175,8 @@ $app->post("/give/offer", function () use ($app) {
     $json = $app->request->getBody();
     $post = json_decode($json, true);
     $db = new DbHandler();
-
-    $query = file_get_contents("database/sql/status/times.sql");
-    $times = $db->select($query)[0];
-
-    switch ($post['meal']){
-        case 'B':
-            $b_sec_left = intval($times["b_sec_left"]);
-            $date = $b_sec_left < 0 ? date('Y-m-d', strtotime(date("Y-m-d") . " + 1 day")) : date("Y-m-d");
-            break;
-        case 'L':
-            $l_sec_left = intval($times["l_sec_left"]);
-            $date = $l_sec_left < 0 ? date('Y-m-d', strtotime(date("Y-m-d") . " + 1 day")) : date("Y-m-d");
-            break;
-        case 'D':
-            $d_sec_left = intval($times["d_sec_left"]);
-            $date = $d_sec_left < 0 ? date('Y-m-d', strtotime(date("Y-m-d") . " + 1 day")) : date("Y-m-d");
-            break;
-    }
-
     $query = file_get_contents("database/sql/give/offer/new_offer.sql");
-    $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $date))[0];
+    $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
 });
 
 $app->post("/give/cancel", function () use ($app) {
@@ -206,27 +185,8 @@ $app->post("/give/cancel", function () use ($app) {
     $json = $app->request->getBody();
     $post = json_decode($json, true);
     $db = new DbHandler();
-
-    $query = file_get_contents("database/sql/status/times.sql");
-    $times = $db->select($query)[0];
-
-    switch ($post['meal']){
-        case 'B':
-            $b_sec_left = intval($times["b_sec_left"]);
-            $date = $b_sec_left < 0 ? date('Y-m-d', strtotime(date("Y-m-d") . " + 1 day")) : date("Y-m-d");
-            break;
-        case 'L':
-            $l_sec_left = intval($times["l_sec_left"]);
-            $date = $l_sec_left < 0 ? date('Y-m-d', strtotime(date("Y-m-d") . " + 1 day")) : date("Y-m-d");
-            break;
-        case 'D':
-            $d_sec_left = intval($times["d_sec_left"]);
-            $date = $d_sec_left < 0 ? date('Y-m-d', strtotime(date("Y-m-d") . " + 1 day")) : date("Y-m-d");
-            break;
-    }
-
     $query = file_get_contents("database/sql/give/cancel/cancel.sql");
-    $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $date))[0];
+    $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
 });
 
 $app->post("/give/confirm", function () use ($app) {
@@ -240,7 +200,7 @@ $app->post("/give/confirm", function () use ($app) {
         switch ($post['status']) {
             case -1:
                 /*Add new record for specific date-meal*/
-                $query = file_get_contents("database/sql/give/offer/new_offer.sql");
+                $query = file_get_contents("database/sql/give/offer/planned_new_offer.sql");
                 $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $post['date']))[0];
                 break;
             case 0:
@@ -256,26 +216,8 @@ $app->post("/give/confirm", function () use ($app) {
         }
     } else {
 
-        $query = file_get_contents("database/sql/status/times.sql");
-        $times = $db->select($query)[0];
-
-        switch ($post['meal']){
-            case 'B':
-                $b_sec_left = intval($times["b_sec_left"]);
-                $date = $b_sec_left < 0 ? date('Y-m-d', strtotime(date("Y-m-d") . " + 1 day")) : date("Y-m-d");
-                break;
-            case 'L':
-                $l_sec_left = intval($times["l_sec_left"]);
-                $date = $l_sec_left < 0 ? date('Y-m-d', strtotime(date("Y-m-d") . " + 1 day")) : date("Y-m-d");
-                break;
-            case 'D':
-                $d_sec_left = intval($times["d_sec_left"]);
-                $date = $d_sec_left < 0 ? date('Y-m-d', strtotime(date("Y-m-d") . " + 1 day")) : date("Y-m-d");
-                break;
-        }
-
         $query = file_get_contents("database/sql/give/confirm/set.sql");
-        $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $date))[0];
+        $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
     }
 
 });

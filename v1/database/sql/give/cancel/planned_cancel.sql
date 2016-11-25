@@ -1,3 +1,5 @@
+#QUERY OK
+
 DELETE
 FROM
 	offers

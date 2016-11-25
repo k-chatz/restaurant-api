@@ -1,3 +1,5 @@
+#QUERY OK
+
 SELECT
 	o.confirmed AS o_confirm
 FROM

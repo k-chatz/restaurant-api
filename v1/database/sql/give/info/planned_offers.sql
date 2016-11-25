@@ -1,3 +1,5 @@
+#QUERY OK
+
 SELECT
 	o.date,
 	sum(
@@ -5,14 +7,14 @@ SELECT
 		WHEN o.meal = 'B' THEN
 
 		IF (
-			TIMEDIFF('09:30:00.0', TIME(NOW())) < 0 && o.date = CURRENT_DATE,
+			TIMEDIFF('09:30:00.0', TIME(NOW())) <= 0 && o.date = CURRENT_DATE,
 			- 1,
 			o.confirmed
 		)
 		ELSE
 
 		IF (
-			TIMEDIFF('09:30:00.0', TIME(NOW())) < 0 && o.date = CURRENT_DATE,
+			TIMEDIFF('09:30:00.0', TIME(NOW())) <= 0 && o.date = CURRENT_DATE,
 			- 1,
 			NULL
 		)
@@ -23,14 +25,14 @@ SELECT
 		WHEN o.meal = 'L' THEN
 
 		IF (
-			TIMEDIFF('15:30:00.0', TIME(NOW())) < 0 && o.date = CURRENT_DATE,
+			TIMEDIFF('15:30:00.0', TIME(NOW())) <= 0 && o.date = CURRENT_DATE,
 			- 1,
 			o.confirmed
 		)
 		ELSE
 
 		IF (
-			TIMEDIFF('15:30:00.0', TIME(NOW())) < 0 && o.date = CURRENT_DATE,
+			TIMEDIFF('15:30:00.0', TIME(NOW())) <= 0 && o.date = CURRENT_DATE,
 			- 1,
 			NULL
 		)
@@ -41,14 +43,14 @@ SELECT
 		WHEN o.meal = 'D' THEN
 
 		IF (
-			TIMEDIFF('20:15:00.0', TIME(NOW())) < 0 && o.date = CURRENT_DATE,
+			TIMEDIFF('20:15:00.0', TIME(NOW())) <= 0 && o.date = CURRENT_DATE,
 			- 1,
 			o.confirmed
 		)
 		ELSE
 
 		IF (
-			TIMEDIFF('20:15:00.0', TIME(NOW())) < 0 && o.date = CURRENT_DATE,
+			TIMEDIFF('20:15:00.0', TIME(NOW())) <= 0 && o.date = CURRENT_DATE,
 			- 1,
 			NULL
 		)

@@ -1,81 +1,24 @@
 #QUERY OK
+
 SELECT
 	r.o_number AS 'o_number',
 	q.confirmed AS 'q_confirm'
 FROM
-	reservations AS r,
-	questions AS q
+reservations AS r
+INNER JOIN questions AS q ON r.q_username = q.q_username AND r.q_meal = q.meal AND r.q_date = q.date
+INNER JOIN offers AS o ON r.o_number = o.o_number AND r.o_meal = o.meal AND r.o_date = o.date
 WHERE
-	q.q_username = r.q_username
-AND q.date = r.q_date
-AND q.meal = r.q_meal
-AND (
-	(
-		r.r_date = ADDDATE(CURRENT_DATE, INTERVAL - 1 DAY)
-		AND (
-			(
-				TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-				AND TIMEDIFF(r.r_time, '09:30:00.0') >= 0
-				AND r.o_meal = 'B'
-			)
-			OR (
-				TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-				AND TIMEDIFF(r.r_time, '15:30:00.0') >= 0
-				AND r.o_meal = 'L'
-			)
-			OR (
-				TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-				AND TIMEDIFF(r.r_time, '20:15:00.0') >= 0
-				AND r.o_meal = 'D'
-			)
-		)
-	)
-	OR (
-		r.r_date = CURRENT_DATE
-		AND (
-			(
-				(
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') < 0
-					AND TIMEDIFF(r.r_time, '09:30:00.0') < 0
-					AND r.o_meal = 'B'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '09:30:00.0') >= 0
-					AND TIMEDIFF(r.r_time, '09:30:00.0') >= 0
-					AND r.o_meal = 'B'
-				)
-			)
-			OR (
-				(
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') < 0
-					AND TIMEDIFF(r.r_time, '15:30:00.0') < 0
-					AND r.o_meal = 'L'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '15:30:00.0') >= 0
-					AND TIMEDIFF(r.r_time, '15:30:00.0') >= 0
-					AND r.o_meal = 'L'
-				)
-			)
-			OR (
-				(
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') < 0
-					AND TIMEDIFF(r.r_time, '20:15:00.0') < 0
-					AND r.o_meal = 'D'
-				)
-				OR (
-					TIMEDIFF(CURRENT_TIME, '20:15:00.0') >= 0
-					AND TIMEDIFF(r.r_time, '20:15:00.0') >= 0
-					AND r.o_meal = 'D'
-				)
-			)
-		)
-	)
+o.confirmed = TRUE AND
+r.o_meal = ?
+AND r.q_username = ? AND
+r.o_date = (
+	CASE
+	WHEN r.q_meal = 'B' THEN
+	IF (TIMEDIFF('09:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	WHEN r.q_meal = 'L' THEN
+	IF (TIMEDIFF('15:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	WHEN r.q_meal = 'D' THEN
+		IF (TIMEDIFF('20:15:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
+	END
 )
-AND r.o_confirmed = TRUE
-AND r.o_meal = ?
-AND r.q_username = ?
-ORDER BY
-	r.r_date,
-	r.r_time ASC
 LIMIT 1
