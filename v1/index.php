@@ -59,9 +59,9 @@ $app->get("/status/info", function () use ($app) {
 
 
     $query = file_get_contents("database/sql/give/confirm/get.sql");
-    $b_o_confirm = ($db->mysqli_prepared_query($query, "sss", array('B', $number, $b_date)));
-    $l_o_confirm = ($db->mysqli_prepared_query($query, "sss", array('L', $number, $l_date)));
-    $d_o_confirm = ($db->mysqli_prepared_query($query, "sss", array('D', $number, $d_date)));
+    $b_o_confirm = ($db->mysqli_prepared_query($query, "ss", array('B', $number)));
+    $l_o_confirm = ($db->mysqli_prepared_query($query, "ss", array('L', $number)));
+    $d_o_confirm = ($db->mysqli_prepared_query($query, "ss", array('D', $number)));
 
 
     $query = file_get_contents("database/sql/take/info/q_username.sql");
