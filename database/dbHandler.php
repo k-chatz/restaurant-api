@@ -7,7 +7,6 @@ class DbHandler
     function __construct()
     {
         require_once 'dbConnect.php';
-        // opening db connection
         $db = new dbConnect();
         $this->conn = $db->connect();
     }
@@ -169,6 +168,4 @@ class DbHandler
     }
 
 }
-
 ?>
-

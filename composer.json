@@ -1,0 +1,15 @@
+{
+  "name": "restaurant-api",
+  "description": "restaurant-api for restaurant app",
+  "authors": [
+    {
+      "name": "Costas Chatzopoulos",
+      "email": "kwstarikanos@gmail.com"
+    }
+  ],
+  "require": {
+    "zendframework/zend-config": "~2.3",
+    "zendframework/zend-http": "~2.3",
+    "firebase/php-jwt": "dev-master"
+  }
+}

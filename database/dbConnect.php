@@ -8,9 +8,14 @@ class dbConnect {
     }
 
     function connect() {
-        include_once 'config.php';
+        global $config;
 
-        $this->conn = new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME);
+        $host = $config->get('database')->get('host');
+        $username = $config->get('database')->get('user');
+        $password = $config->get('database')->get('password');
+        $database = $config->get('database')->get('name');
+
+        $this->conn = new mysqli($host, $username, $password, $database);
 
         if (!$this->conn->set_charset("utf8")) {
             printf("Error loading character set utf8: %s\n", $this->conn->error);
@@ -23,6 +28,5 @@ class dbConnect {
 
         return $this->conn;
     }
-
 }
 ?>
