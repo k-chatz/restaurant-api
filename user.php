@@ -1,7 +1,6 @@
 <?php
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
-
 use Firebase\JWT\JWT;
 
 function jwt($data, $delay, $duration)
@@ -10,10 +9,10 @@ function jwt($data, $delay, $duration)
 
     $algorithm = $config->get('jwt')->get('algorithm');
     $secretKey = base64_decode($config->get('jwt')->get('key'));
-    $serverName = $config->get('serverName');
 
-    $tokenId = base64_encode(mcrypt_create_iv(32));
     $issuedAt = time();
+    $tokenId = base64_encode(mcrypt_create_iv(32));
+    $serverName = $config->get('serverName');
     $notBefore = $issuedAt + $delay;
     $expire = $notBefore + $duration;
 
@@ -41,12 +40,11 @@ function authStatus(&$request, &$response, &$tokenData)
                 $secretKey = base64_decode($config->get('jwt')->get('key'));
                 $token = JWT::decode($jwt, $secretKey, [$config->get('jwt')->get('algorithm')]);
                 $tokenData = $token->data;
+                /*TODO: Query::Validate user at database with token data.*/
                 return 200;                 // Ok
             } catch (Exception $e) {
                 $out->write($e->getMessage());
-
                 /*TODO: If token is expired, then produce new token and send back to the user via http header*/
-
                 return 401;                 // Unauthorized
             }
         } else {
@@ -59,37 +57,59 @@ function authStatus(&$request, &$response, &$tokenData)
 }
 
 $app->post("/user/do/connect", function (Request $request, Response $response) {
+    global $config;
+    $status = 200;  // Ok
     $out = $response->getBody();
     $response = $response->withHeader('Content-type', 'application/json');
     $post = json_decode($request->getBody(), true);
-    $userid = isset($post['userid']) ? $post['userid'] : 0;
-    $status = 200;  // Ok
-    if ($userid) {
+    $fbAccessToken = isset($post['fbAccessToken']) ? $post['fbAccessToken'] : 0;
+
+    if ($fbAccessToken) {
+        $fb = new \Facebook\Facebook([
+            'app_id' => $config->get('fbApp')->get('id'),
+            'app_secret' => $config->get('fbApp')->get('secret'),
+            'default_graph_version' => $config->get('fbApp')->get('graph_version')
+        ]);
         try {
-            $db = new DbHandler();
-            $query = file_get_contents("Restaurant-API/database/sql/user/get/user.sql");
-            $user = $db->mysqli_prepared_query($query, "s", array($userid));
-            $user = empty($user) ? 0 : $user[0];
-            if ($user) {
-                if ($userid == $user['username']) {
-                    $out->write(json_encode(['jwt' => jwt($user, 0, 172800)]));
+            $fbResponse = $fb->get('/me', $fbAccessToken);
+            $me = $fbResponse->getGraphUser();
+            $userId = $me->getId();
+            $name = $me->getName();
+            try {
+                $db = new DbHandler();
+                $query = file_get_contents("Restaurant-API/database/sql/user/get/user.sql");
+                $user = $db->mysqli_prepared_query($query, "s", array($userId));
+                $user = empty($user) ? 0 : $user[0];
+                if ($user) {
+                    if ($userId == $user['username']) {
+
+                        /*TODO: Update user information eg name*/
+                        $out->write(json_encode(['jwt' => jwt($user, 0, 5000)]));
+                    } else {
+                        $status = 401;      // Unauthorized
+                    }
                 } else {
-                    $status = 401;      // Unauthorized
+                    /*TODO: User is new, register user with fb credentials*/
+
+                    $query = file_get_contents("Restaurant-API/database/sql/user/set/user.sql");
+                    $result = $db->mysqli_prepared_query($query, "ss", array($userId, $name));
+                    $out->write(json_encode($result));
                 }
-            } else {
-
-                /*TODO: User is new, register user with fb credentials*/
-
-                echo "You are new user, i will try to do register for you!";
-                //$status = 404;        // Not Found
+            } catch (Exception $e) {
+                $out->write($e->getMessage());
+                $status = 500;              // Internal Server Error
             }
-        } catch (Exception $e) {
-            echo $e->getMessage();
-            $status = 500;              // Internal Server Error
+        } catch (\Facebook\Exceptions\FacebookResponseException $e) {
+            // When Graph returns an error
+            $out->write('Graph returned an error: ' . $e->getMessage());
+            $status = 501;                  // Not Implemented
+        } catch (\Facebook\Exceptions\FacebookSDKException $e) {
+            // When validation fails or other local issues
+            $out->write('Facebook SDK returned an error: ' . $e->getMessage());
+            $status = 500;                  // Internal Server Error
         }
     } else {
-        $status = 400;                  // Bad Request
+        $status = 400;                      // Bad Request
     }
-
     return $response->withStatus($status);
 });

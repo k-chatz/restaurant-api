@@ -11,4 +11,10 @@ return array(
         'name'     => '', // Database schema name
     ),
     'serverName' => 'yourdomain.com',
+    'fbApp' => array(
+        'id'     => '',
+        'name'     => '',
+        'secret' => '',
+        'graph_version' => 'v2.8'
+    )
 );

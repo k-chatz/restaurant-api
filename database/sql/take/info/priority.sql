@@ -2,7 +2,6 @@
 
 SELECT
 	u.name,
-	u.surname,
 	q.moment
 FROM
 	questions AS q
