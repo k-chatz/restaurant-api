@@ -1,1 +1,1 @@
-INSERT INTO `restaurant`.`users` (`username`, `name`, `role`) VALUES (?, ?, 'V');
+INSERT INTO `restaurant`.`users` (`username`, `name`, `role`, `picture`, `gender`) VALUES (?, ?, 'V', ?, ?);

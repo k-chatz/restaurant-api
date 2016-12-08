@@ -43,7 +43,7 @@ function authStatus(&$request, &$response, &$tokenData)
                 /*TODO: Query::Validate user at database with token data.*/
                 return 200;                 // Ok
             } catch (Exception $e) {
-                $out->write($e->getMessage());
+                $out->write(json_encode(handleError($e->getMessage(), "JWT", $e->getCode())));
                 /*TODO: If token is expired, then produce new token and send back to the user via http header*/
                 return 401;                 // Unauthorized
             }
@@ -52,6 +52,7 @@ function authStatus(&$request, &$response, &$tokenData)
         }
     } else {
         $out->write('Token not found in request');
+        $out->write(json_encode(handleError('Token not found in request', "JWT", 400)));
         return 400;                         // Bad Request
     }
 }
@@ -71,45 +72,89 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
             'default_graph_version' => $config->get('fbApp')->get('graph_version')
         ]);
         try {
-            $fbResponse = $fb->get('/me', $fbAccessToken);
+            $fbResponse = $fb->get('/me?fields=id,name,gender,picture{url},groups{id}', $fbAccessToken);
             $me = $fbResponse->getGraphUser();
-            $userId = $me->getId();
+
+            $username = $me->getId();
             $name = $me->getName();
+            $picture = $me->getPicture()->getUrl();
+            $gender = $me->getGender();
+            $groups = $me->getField('groups');
+
+
+            $jwtDuration = 5000;
+
             try {
                 $db = new DbHandler();
                 $query = file_get_contents("Restaurant-API/database/sql/user/get/user.sql");
-                $user = $db->mysqli_prepared_query($query, "s", array($userId));
+                $user = $db->mysqli_prepared_query($query, "s", array($username));
                 $user = empty($user) ? 0 : $user[0];
                 if ($user) {
-                    if ($userId == $user['username']) {
+                    if ($name != $user['name'] || $picture != $user['picture']) {
 
                         /*TODO: Update user information eg name*/
-                        $out->write(json_encode(['jwt' => jwt($user, 0, 5000)]));
-                    } else {
-                        $status = 401;      // Unauthorized
+                        $query = file_get_contents("Restaurant-API/database/sql/user/update/user.sql");
+                        $result = $db->mysqli_prepared_query($query, "sss", array($name, $picture, $username));
+                        $user['name'] = $name;
+                        $user['picture'] = $picture;
                     }
-                } else {
-                    /*TODO: User is new, register user with fb credentials*/
 
+                    $outputJson = [
+                        'userIsNew' => false,
+                        'jwt' => jwt($user, 0, $jwtDuration)
+                    ];
+
+                    $out->write(json_encode($outputJson));
+                } else {
+
+                    /*User is new, register user with fb credentials*/
                     $query = file_get_contents("Restaurant-API/database/sql/user/set/user.sql");
-                    $result = $db->mysqli_prepared_query($query, "ss", array($userId, $name));
-                    $out->write(json_encode($result));
+                    $result = $db->mysqli_prepared_query($query, "ssss", array($username, $name, $picture, $gender));
+
+                    if (!empty($result) && $result[0] > 0) {
+                        $jwtData = [
+                            'username' => $username,
+                            'name' => $name,
+                            'number' => null,
+                            'role' => 'V',
+                            'picture' => $picture,
+                            'gender' => $gender
+                        ];
+                        $outputJson = [
+                            'userIsNew' => true,
+                            'inserted' => empty($result) ? 0 : $result[0],
+                            'jwt' => jwt($jwtData, 0, $jwtDuration)
+                        ];
+                    } else {
+                        $status = 500;
+                        $outputJson = handleError("User not inserted!", "Database", $status);
+                    }
+
+                    $out->write(json_encode($outputJson));
                 }
             } catch (Exception $e) {
-                $out->write($e->getMessage());
                 $status = 500;              // Internal Server Error
+                $out->write(json_encode(handleError($e->getMessage(), "Database", $e->getCode())));
             }
         } catch (\Facebook\Exceptions\FacebookResponseException $e) {
             // When Graph returns an error
-            $out->write('Graph returned an error: ' . $e->getMessage());
-            $status = 501;                  // Not Implemented
+            $out->write(json_encode(handleError($e->getMessage(), "Graph", $e->getCode())));
+            $status = 401;      // Unauthorized
         } catch (\Facebook\Exceptions\FacebookSDKException $e) {
             // When validation fails or other local issues
-            $out->write('Facebook SDK returned an error: ' . $e->getMessage());
-            $status = 500;                  // Internal Server Error
+            $out->write(json_encode(handleError($e->getMessage(), "Facebook SDK", $e->getCode())));
+            $status = 401;      // Unauthorized
         }
     } else {
         $status = 400;                      // Bad Request
     }
+    return $response->withStatus($status);
+});
+
+$app->get("/user/token/data", function (Request $request, Response $response) {
+    $out = $response->getBody();
+    $response = $response->withHeader('Content-type', 'application/json');
+    $status = authStatus($request, $response, $tokenData);
+    $out->write(json_encode(['tokenData' => $tokenData]));
     return $response->withStatus($status);
 });
