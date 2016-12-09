@@ -27,6 +27,24 @@ function jwt($data, $delay, $duration)
     return JWT::encode($payload, $secretKey, $algorithm);
 }
 
+function validate($jwtData, &$out)
+{
+    $status = 200;      // OK
+    try {
+        $db = new DbHandler();
+        $query = file_get_contents("Restaurant-API/database/sql/user/get/validate.sql");
+        $result = $db->mysqli_prepared_query($query, "s", array($jwtData->username));
+        if (empty($result)) {
+            $status = 401;              // Unauthorized
+            $out->write(json_encode(handleError("User Not Found!", "Database", $status)));
+        }
+    } catch (Exception $e) {
+        $out->write(json_encode(handleError($e->getMessage(), "Database", $e->getCode())));
+        $status = 500;                 // Internal Server Error
+    }
+    return $status;
+}
+
 function authStatus(&$request, &$response, &$tokenData)
 {
     global $config;
@@ -39,24 +57,28 @@ function authStatus(&$request, &$response, &$tokenData)
             try {
                 $secretKey = base64_decode($config->get('jwt')->get('key'));
                 $token = JWT::decode($jwt, $secretKey, [$config->get('jwt')->get('algorithm')]);
+                /*Validate user at database with token data.*/
                 $tokenData = $token->data;
-                /*TODO: Query::Validate user at database with token data.*/
-                return 200;                 // Ok
+                return validate($token->data, $out);
             } catch (Exception $e) {
-                $out->write(json_encode(handleError($e->getMessage(), "JWT", $e->getCode())));
-                /*TODO: If token is expired, then produce new token and send back to the user via http header*/
+                $out->write(json_encode(handleError($e->getMessage(), "Json Web Token", $e->getCode())));
                 return 401;                 // Unauthorized
             }
         } else {
             return 400;                     // Bad Request
         }
     } else {
-        $out->write('Token not found in request');
-        $out->write(json_encode(handleError('Token not found in request', "JWT", 400)));
+        $out->write(json_encode(handleError('Token not found in request', "Json Web Token", 400)));
         return 400;                         // Bad Request
     }
 }
 
+/*User Do Connect:
+Input:
+    Facebook short access token from client
+Output:
+    Json Web Token
+*/
 $app->post("/user/do/connect", function (Request $request, Response $response) {
     global $config;
     $status = 200;  // Ok
@@ -81,9 +103,8 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
             $gender = $me->getGender();
             $groups = $me->getField('groups');
 
-
+            /*Set session duration between client and server*/
             $jwtDuration = 5000;
-
             try {
                 $db = new DbHandler();
                 $query = file_get_contents("Restaurant-API/database/sql/user/get/user.sql");
@@ -98,12 +119,10 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
                         $user['name'] = $name;
                         $user['picture'] = $picture;
                     }
-
                     $outputJson = [
                         'userIsNew' => false,
                         'jwt' => jwt($user, 0, $jwtDuration)
                     ];
-
                     $out->write(json_encode($outputJson));
                 } else {
 
@@ -138,7 +157,7 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
             }
         } catch (\Facebook\Exceptions\FacebookResponseException $e) {
             // When Graph returns an error
-            $out->write(json_encode(handleError($e->getMessage(), "Graph", $e->getCode())));
+            $out->write(json_encode(handleError($e->getMessage(), "Facebook Graph", $e->getCode())));
             $status = 401;      // Unauthorized
         } catch (\Facebook\Exceptions\FacebookSDKException $e) {
             // When validation fails or other local issues
@@ -151,10 +170,13 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
     return $response->withStatus($status);
 });
 
+/*This route is temporary, only for debugging!*/
 $app->get("/user/token/data", function (Request $request, Response $response) {
     $out = $response->getBody();
     $response = $response->withHeader('Content-type', 'application/json');
-    $status = authStatus($request, $response, $tokenData);
-    $out->write(json_encode(['tokenData' => $tokenData]));
+    $status = authStatus($request, $response, $jwtData);
+    if ($status == 200) {
+        $out->write(json_encode(['tokenData' => $jwtData]));
+    }
     return $response->withStatus($status);
 });
