@@ -15,25 +15,24 @@ $app->post("/take/question", function (Request $request, Response $response) {
             $userRole = $tokenData->role;
             try {
                 $db = new DbHandler();
-
-                /*TODO: Get Query execution errors or information eg affected_rows, dublicate entry etc.*/
-
-                /*Delete expired questions for current user and current meal*/
-                $query = file_get_contents("Restaurant-API/database/sql/take/question/delete_expired.sql");
-                $result = $db->mysqli_prepared_query($query, "ss", array($username, $post['meal']))[0];
-
-                /*Insert question*/
                 $query = file_get_contents("Restaurant-API/database/sql/take/question/question.sql");
                 $result = $db->mysqli_prepared_query($query, "ss", array($username, $post['meal']))[0];
-                $out->write(json_encode($result, true));
+
+                $output = [
+                    "take" => array(
+                        "question" => $result
+                    )
+                ];
+                $out->write(json_encode($output, true));
+
             } catch (Exception $e) {
-                $out->write($e->getMessage());
                 $status = 500;                 // Internal Server Error
+                $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
             }
         }
     } else {
-        $out->write("400 Bad Request");
         $status = 400;
+        $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
 });
@@ -49,20 +48,22 @@ $app->post("/take/cancel", function (Request $request, Response $response) {
             $userRole = $tokenData->role;
             try {
                 $db = new DbHandler();
-
-                /*TODO: Get Query execution errors or information eg affected_rows, dublicate entry etc.*/
-
                 $query = file_get_contents("Restaurant-API/database/sql/take/cancel/cancel.sql");
                 $result = $db->mysqli_prepared_query($query, "ss", array($username, $post['meal']))[0];
-                $out->write(json_encode($result, true));
+                $output = [
+                    "take" => array(
+                        "cancel" => $result
+                    )
+                ];
+                $out->write(json_encode($output, true));
             } catch (Exception $e) {
-                $out->write($e->getMessage());
                 $status = 500;                 // Internal Server Error
+                $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
             }
         }
     } else {
-        $out->write("400 Bad Request");
         $status = 400;
+        $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
 });
@@ -78,20 +79,22 @@ $app->post("/take/confirm", function (Request $request, Response $response) {
             $userRole = $tokenData->role;
             try {
                 $db = new DbHandler();
-
-                /*TODO: Get Query execution errors or information eg affected_rows, dublicate entry etc.*/
-
                 $query = file_get_contents("Restaurant-API/database/sql/take/confirm/set.sql");
                 $result = $db->mysqli_prepared_query($query, "ss", array($username, $post['meal']))[0];
-                $out->write(json_encode($result, true));
+                $output = [
+                    "take" => array(
+                        "confirm" => $result
+                    )
+                ];
+                $out->write(json_encode($output, true));
             } catch (Exception $e) {
-                $out->write($e->getMessage());
                 $status = 500;                 // Internal Server Error
+                $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
             }
         }
     } else {
-        $out->write("400 Bad Request");
         $status = 400;
+        $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
 });
@@ -107,20 +110,22 @@ $app->post("/take/reject", function (Request $request, Response $response) {
             $userRole = $tokenData->role;
             try {
                 $db = new DbHandler();
-
-                /*TODO: Get Query execution errors or information eg affected_rows, dublicate entry etc.*/
-
                 $query = file_get_contents("Restaurant-API/database/sql/take/cancel/cancel.sql");
                 $result = $db->mysqli_prepared_query($query, "ss", array($username, $post['meal']))[0];
-                $out->write(json_encode($result, true));
+                $output = [
+                    "take" => array(
+                        "reject" => $result
+                    )
+                ];
+                $out->write(json_encode($output, true));
             } catch (Exception $e) {
-                $out->write($e->getMessage());
                 $status = 500;                 // Internal Server Error
+                $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
             }
         }
     } else {
-        $out->write("400 Bad Request");
         $status = 400;
+        $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
 });

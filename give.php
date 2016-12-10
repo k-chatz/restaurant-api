@@ -14,26 +14,28 @@ $app->post("/give/offer", function (Request $request, Response $response) {
             $number = $tokenData->number;
             $userRole = $tokenData->role;
             if ($userRole == 'V') {
-                $out->write("401 Unauthorized (Visitors don't have 'give' actions!)");    // Unauthorized
-                $status = 401;
+                $status = 403;
+                $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
                     $db = new DbHandler();
-
-                    /*TODO: Get Query execution errors or information eg affected_rows, dublicate entry etc.*/
-
                     $query = file_get_contents("Restaurant-API/database/sql/give/offer/new_offer.sql");
                     $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
-                    $out->write(json_encode($result, true));
+                    $output = [
+                        "give" => array(
+                            "offer" => $result
+                        )
+                    ];
+                    $out->write(json_encode($output, true));
                 } catch (Exception $e) {
-                    $out->write($e->getMessage());
                     $status = 500;                 // Internal Server Error
+                    $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
                 }
             }
         }
     } else {
-        $out->write("400 Bad Request");
         $status = 400;
+        $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
 });
@@ -48,26 +50,28 @@ $app->post("/give/cancel", function (Request $request, Response $response) {
             $number = $tokenData->number;
             $userRole = $tokenData->role;
             if ($userRole == 'V') {
-                $out->write("401 Unauthorized (Visitors don't have 'give' actions!)");    // Unauthorized
-                $status = 401;
+                $status = 403;
+                $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
                     $db = new DbHandler();
-
-                    /*TODO: Get Query execution errors or information eg affected_rows, dublicate entry etc.*/
-
                     $query = file_get_contents("Restaurant-API/database/sql/give/cancel/cancel.sql");
                     $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
-                    $out->write(json_encode($result, true));
+                    $output = [
+                        "give" => array(
+                            "cancel" => $result
+                        )
+                    ];
+                    $out->write(json_encode($output, true));
                 } catch (Exception $e) {
-                    $out->write($e->getMessage());
                     $status = 500;                 // Internal Server Error
+                    $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
                 }
             }
         }
     } else {
-        $out->write("400 Bad Request");
         $status = 400;
+        $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
 });
@@ -82,46 +86,55 @@ $app->post("/give/confirm", function (Request $request, Response $response) {
             $number = $tokenData->number;
             $userRole = $tokenData->role;
             if ($userRole == 'V') {
-                $out->write("401 Unauthorized (Visitors don't have 'give' actions!)");    // Unauthorized
-                $status = 401;
+                $status = 403;
+                $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
                     $db = new DbHandler();
-
-                    /*TODO: Get Query execution errors or information eg affected_rows, dublicate entry etc.*/
-
+                    $result = null;
+                    $output = null;
                     if (isset($post['status']) && isset($post['date'])) {
+
                         switch ($post['status']) {
                             case -1: /*Unchecked - Add new record for specific date-meal*/
                                 $query = file_get_contents("Restaurant-API/database/sql/give/offer/planned_new_offer.sql");
                                 $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $post['date']))[0];
-                                $out->write(json_encode($result, true));
                                 break;
                             case 0: /*Undefined - Update value of 'confirmed' field and set to true for record with specific date-meal*/
                                 $query = file_get_contents("Restaurant-API/database/sql/give/confirm/planned_set.sql");
                                 $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $post['date']))[0];
-                                $out->write(json_encode($result, true));
                                 break;
                             case 1: /*Checked - Delete record with specific date-meal (cancel query)*/
                                 $query = file_get_contents("Restaurant-API/database/sql/give/cancel/planned_cancel.sql");
                                 $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $post['date']))[0];
-                                $out->write(json_encode($result, true));
                                 break;
                         }
+                        $output = [
+                            "give" => array(
+                                "status" => $post['status'],
+                                "date" => $post['date'],
+                                "confirm" => $result
+                            )
+                        ];
                     } else {
                         $query = file_get_contents("Restaurant-API/database/sql/give/confirm/set.sql");
                         $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
-                        $out->write(json_encode($result, true));
+                        $output = [
+                            "give" => array(
+                                "confirm" => $result
+                            )
+                        ];
                     }
+                    $out->write(json_encode($output, true));
                 } catch (Exception $e) {
-                    $out->write($e->getMessage());
                     $status = 500;                 // Internal Server Error
+                    $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
                 }
             }
         }
     } else {
-        $out->write("400 Bad Request");
         $status = 400;
+        $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
 });
@@ -136,26 +149,28 @@ $app->post("/give/reject", function (Request $request, Response $response) {
             $number = $tokenData->number;
             $userRole = $tokenData->role;
             if ($userRole == 'V') {
-                $out->write("401 Unauthorized (Visitors don't have 'give' actions!)");    // Unauthorized
-                $status = 401;
+                $status = 403;
+                $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
                     $db = new DbHandler();
-
-                    /*TODO: Get Query execution errors or information eg affected_rows, dublicate entry etc.*/
-
                     $query = file_get_contents("Restaurant-API/database/sql/give/cancel/cancel.sql");
                     $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
-                    $out->write(json_encode($result, true));
+                    $output = [
+                        "give" => array(
+                            "reject" => $result
+                        )
+                    ];
+                    $out->write(json_encode($output, true));
                 } catch (Exception $e) {
-                    $out->write($e->getMessage());
                     $status = 500;                 // Internal Server Error
+                    $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
                 }
             }
         }
     } else {
-        $out->write("400 Bad Request");
         $status = 400;
+        $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
 });

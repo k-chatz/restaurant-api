@@ -141,7 +141,6 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
                         ];
                         $outputJson = [
                             'userIsNew' => true,
-                            'inserted' => empty($result) ? 0 : $result[0],
                             'jwt' => jwt($jwtData, 0, $jwtDuration)
                         ];
                     } else {
