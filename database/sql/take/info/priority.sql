@@ -2,6 +2,8 @@
 
 SELECT
 	u.name,
+	u.picture,
+	u.gender,
 	q.moment
 FROM
 	questions AS q

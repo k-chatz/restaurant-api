@@ -104,7 +104,7 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
             $groups = $me->getField('groups');
 
             /*Set session duration between client and server*/
-            $jwtDuration = 5000;
+            $jwtDuration = 10000;
             try {
                 $db = new DbHandler();
                 $query = file_get_contents("Restaurant-API/database/sql/user/get/user.sql");
