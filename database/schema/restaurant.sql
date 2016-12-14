@@ -2,21 +2,21 @@
 Navicat MySQL Data Transfer
 
 Source Server         : Local Root
-Source Server Version : 100113
+Source Server Version : 50505
 Source Host           : localhost:3306
 Source Database       : restaurant
 
 Target Server Type    : MYSQL
-Target Server Version : 100113
+Target Server Version : 50505
 File Encoding         : 65001
 
-Date: 2016-11-25 08:10:52
+Date: 2016-12-14 19:14:32
 */
 
 SET FOREIGN_KEY_CHECKS=0;
 
 -- ----------------------------
--- Table structure for meals
+-- Table structure for `meals`
 -- ----------------------------
 DROP TABLE IF EXISTS `meals`;
 CREATE TABLE `meals` (
@@ -28,7 +28,11 @@ CREATE TABLE `meals` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Table structure for meal_types
+-- Records of meals
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for `meal_types`
 -- ----------------------------
 DROP TABLE IF EXISTS `meal_types`;
 CREATE TABLE `meal_types` (
@@ -39,7 +43,14 @@ CREATE TABLE `meal_types` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Table structure for numbers
+-- Records of meal_types
+-- ----------------------------
+INSERT INTO `meal_types` VALUES ('B', '08:00:00.0', '09:30:00.0');
+INSERT INTO `meal_types` VALUES ('L', '13:00:00.0', '15:30:00.0');
+INSERT INTO `meal_types` VALUES ('D', '18:30:00.0', '20:15:00.0');
+
+-- ----------------------------
+-- Table structure for `numbers`
 -- ----------------------------
 DROP TABLE IF EXISTS `numbers`;
 CREATE TABLE `numbers` (
@@ -48,7 +59,38 @@ CREATE TABLE `numbers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Table structure for offers
+-- Records of numbers
+-- ----------------------------
+INSERT INTO `numbers` VALUES ('AN-111');
+INSERT INTO `numbers` VALUES ('Α1010');
+INSERT INTO `numbers` VALUES ('Α1040');
+INSERT INTO `numbers` VALUES ('Α1324');
+INSERT INTO `numbers` VALUES ('Α2056');
+INSERT INTO `numbers` VALUES ('Α3104');
+INSERT INTO `numbers` VALUES ('Α3213');
+INSERT INTO `numbers` VALUES ('Α3249');
+INSERT INTO `numbers` VALUES ('Α3255');
+INSERT INTO `numbers` VALUES ('Α3302');
+INSERT INTO `numbers` VALUES ('Α3402');
+INSERT INTO `numbers` VALUES ('Α4020');
+INSERT INTO `numbers` VALUES ('Α4353');
+INSERT INTO `numbers` VALUES ('Α5020');
+INSERT INTO `numbers` VALUES ('Α6553');
+INSERT INTO `numbers` VALUES ('Β234');
+INSERT INTO `numbers` VALUES ('Β314');
+INSERT INTO `numbers` VALUES ('Β433');
+INSERT INTO `numbers` VALUES ('Γ1023');
+INSERT INTO `numbers` VALUES ('Γ1034');
+INSERT INTO `numbers` VALUES ('Γ1323');
+INSERT INTO `numbers` VALUES ('Γ2312');
+INSERT INTO `numbers` VALUES ('Γ4321');
+INSERT INTO `numbers` VALUES ('Δ1234');
+INSERT INTO `numbers` VALUES ('Δ2345');
+INSERT INTO `numbers` VALUES ('Δ4005');
+INSERT INTO `numbers` VALUES ('Δ4006');
+
+-- ----------------------------
+-- Table structure for `offers`
 -- ----------------------------
 DROP TABLE IF EXISTS `offers`;
 CREATE TABLE `offers` (
@@ -66,7 +108,7 @@ CREATE TABLE `offers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Table structure for questions
+-- Table structure for `questions`
 -- ----------------------------
 DROP TABLE IF EXISTS `questions`;
 CREATE TABLE `questions` (
@@ -83,7 +125,7 @@ CREATE TABLE `questions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Table structure for reservations
+-- Table structure for `reservations`
 -- ----------------------------
 DROP TABLE IF EXISTS `reservations`;
 CREATE TABLE `reservations` (
@@ -102,7 +144,7 @@ CREATE TABLE `reservations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Table structure for settings
+-- Table structure for `settings`
 -- ----------------------------
 DROP TABLE IF EXISTS `settings`;
 CREATE TABLE `settings` (
@@ -113,21 +155,21 @@ CREATE TABLE `settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Table structure for users
+-- Records of settings
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for `users`
 -- ----------------------------
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `username` varchar(15) NOT NULL,
-  `password` varchar(45) NOT NULL,
+  `name` varchar(50) NOT NULL,
   `number` varchar(6) DEFAULT NULL,
   `role` varchar(1) NOT NULL,
-  `name` varchar(15) NOT NULL,
-  `surname` varchar(15) NOT NULL,
-  `ip` varchar(15) NOT NULL,
-  `mac` varchar(17) NOT NULL,
-  `priority_for_b` int(11) unsigned zerofill NOT NULL DEFAULT '00000000000',
-  `priority_for_l` int(11) unsigned zerofill NOT NULL DEFAULT '00000000000',
-  `priority_for_d` int(11) unsigned zerofill NOT NULL DEFAULT '00000000000',
+  `picture` varchar(150) DEFAULT NULL,
+  `gender` varchar(6) DEFAULT NULL,
+  `lastconnect` datetime DEFAULT NULL,
   PRIMARY KEY (`username`),
   UNIQUE KEY `number_UNIQUE` (`number`) USING BTREE,
   KEY `fk_users_user_roles` (`role`),
@@ -136,7 +178,7 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Table structure for user_roles
+-- Table structure for `user_roles`
 -- ----------------------------
 DROP TABLE IF EXISTS `user_roles`;
 CREATE TABLE `user_roles` (
@@ -145,6 +187,13 @@ CREATE TABLE `user_roles` (
   UNIQUE KEY `role_UNIQUE` (`role`),
   KEY `role` (`role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Records of user_roles
+-- ----------------------------
+INSERT INTO `user_roles` VALUES ('A');
+INSERT INTO `user_roles` VALUES ('B');
+INSERT INTO `user_roles` VALUES ('V');
 DROP TRIGGER IF EXISTS `reservation1`;
 DELIMITER ;;
 CREATE TRIGGER `reservation1` AFTER INSERT ON `offers` FOR EACH ROW BEGIN
@@ -357,4 +406,3 @@ CLOSE Q_STEP_1;
 END
 ;;
 DELIMITER ;
-SET FOREIGN_KEY_CHECKS=1;
