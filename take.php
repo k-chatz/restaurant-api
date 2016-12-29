@@ -9,10 +9,10 @@ $app->post("/take/question", function (Request $request, Response $response) {
     $response = $response->withHeader('Content-type', 'application/json');
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
-        $status = authStatus($request, $response, $tokenData);
+        $status = authStatus($request, $response, $tokenData, $user);
         if ($status == 200) {
             $username = $tokenData->username;
-            $userRole = $tokenData->role;
+            $role = $user[0]['role'];
             try {
                 $db = new DbHandler();
                 $query = file_get_contents("Restaurant-API/database/sql/take/question/question.sql");
@@ -42,10 +42,10 @@ $app->post("/take/cancel", function (Request $request, Response $response) {
     $response = $response->withHeader('Content-type', 'application/json');
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
-        $status = authStatus($request, $response, $tokenData);
+        $status = authStatus($request, $response, $tokenData, $user);
         if ($status == 200) {
             $username = $tokenData->username;
-            $userRole = $tokenData->role;
+            $role = $user[0]['role'];
             try {
                 $db = new DbHandler();
                 $query = file_get_contents("Restaurant-API/database/sql/take/cancel/cancel.sql");
@@ -73,10 +73,10 @@ $app->post("/take/confirm", function (Request $request, Response $response) {
     $response = $response->withHeader('Content-type', 'application/json');
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
-        $status = authStatus($request, $response, $tokenData);
+        $status = authStatus($request, $response, $tokenData, $user);
         if ($status == 200) {
             $username = $tokenData->username;
-            $userRole = $tokenData->role;
+            $role = $user[0]['role'];
             try {
                 $db = new DbHandler();
                 $query = file_get_contents("Restaurant-API/database/sql/take/confirm/set.sql");
@@ -104,10 +104,10 @@ $app->post("/take/reject", function (Request $request, Response $response) {
     $response = $response->withHeader('Content-type', 'application/json');
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
-        $status = authStatus($request, $response, $tokenData);
+        $status = authStatus($request, $response, $tokenData, $user);
         if ($status == 200) {
             $username = $tokenData->username;
-            $userRole = $tokenData->role;
+            $role = $user[0]['role'];
             try {
                 $db = new DbHandler();
                 $query = file_get_contents("Restaurant-API/database/sql/take/cancel/cancel.sql");

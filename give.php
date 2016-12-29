@@ -9,10 +9,10 @@ $app->post("/give/offer", function (Request $request, Response $response) {
     $response = $response->withHeader('Content-type', 'application/json');
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
-        $status = authStatus($request, $response, $tokenData);
+        $status = authStatus($request, $response, $tokenData, $user);
         if ($status == 200) {
-            $number = $tokenData->number;
-            $userRole = $tokenData->role;
+            $number = $user[0]['number'];
+            $userRole = $user[0]['role'];
             if ($userRole == 'V') {
                 $status = 403;
                 $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
@@ -45,11 +45,11 @@ $app->post("/give/cancel", function (Request $request, Response $response) {
     $response = $response->withHeader('Content-type', 'application/json');
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
-        $status = authStatus($request, $response, $tokenData);
+        $status = authStatus($request, $response, $tokenData, $user);
         if ($status == 200) {
-            $number = $tokenData->number;
-            $userRole = $tokenData->role;
-            if ($userRole == 'V') {
+            $number = $user[0]['number'];
+            $role = $user[0]['role'];
+            if ($role == 'V') {
                 $status = 403;
                 $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
             } else {
@@ -81,11 +81,11 @@ $app->post("/give/confirm", function (Request $request, Response $response) {
     $response = $response->withHeader('Content-type', 'application/json');
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
-        $status = authStatus($request, $response, $tokenData);
+        $status = authStatus($request, $response, $tokenData, $user);
         if ($status == 200) {
-            $number = $tokenData->number;
-            $userRole = $tokenData->role;
-            if ($userRole == 'V') {
+            $number = $user[0]['number'];
+            $role = $user[0]['role'];
+            if ($role == 'V') {
                 $status = 403;
                 $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
             } else {
@@ -144,13 +144,13 @@ $app->post("/give/reject", function (Request $request, Response $response) {
     $response = $response->withHeader('Content-type', 'application/json');
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
-        $status = authStatus($request, $response, $tokenData);
+        $status = authStatus($request, $response, $tokenData, $user);
         if ($status == 200) {
-            $number = $tokenData->number;
-            $userRole = $tokenData->role;
-            if ($userRole == 'V') {
+            $number = $user[0]['number'];
+            $role = $user[0]['role'];
+            if ($role == 'V') {
                 $status = 403;
-                $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
+                $out->write(json_encode(handleError("Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
                     $db = new DbHandler();

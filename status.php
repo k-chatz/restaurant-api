@@ -7,11 +7,12 @@ use \Psr\Http\Message\ResponseInterface as Response;
 $app->get("/status/info", function (Request $request, Response $response) {
     $out = $response->getBody();
     $response = $response->withHeader('Content-type', 'application/json');
-    $status = authStatus($request, $response, $tokenData);
+    $status = authStatus($request, $response, $tokenData, $user);
+
     if ($status == 200) {
         $username = $tokenData->username;
-        $number = $tokenData->number;
-        $userRole = $tokenData->role;
+        $number = $user[0]['number'];
+        $role = $user[0]['role'];
 
         $db = new DbHandler();
 
@@ -39,15 +40,15 @@ $app->get("/status/info", function (Request $request, Response $response) {
         $l_o_room = ($db->mysqli_prepared_query($query, "ss", array('L', $username)));
         $d_o_room = ($db->mysqli_prepared_query($query, "ss", array('D', $username)));
 
-        $query = file_get_contents("Restaurant-API/database/sql/give/info/offers_count.sql");
-        $b_offers = ($db->mysqli_prepared_query($query, "ss", array('B', $number)));
-        $l_offers = ($db->mysqli_prepared_query($query, "ss", array('L', $number)));
-        $d_offers = ($db->mysqli_prepared_query($query, "ss", array('D', $number)));
-
         $query = file_get_contents("Restaurant-API/database/sql/take/info/priority.sql");
         $b_priority = ($db->mysqli_prepared_query($query, "s", array('B')));
         $l_priority = ($db->mysqli_prepared_query($query, "s", array('L')));
         $d_priority = ($db->mysqli_prepared_query($query, "s", array('D')));
+
+        $query = file_get_contents("Restaurant-API/database/sql/give/info/offers_count.sql");
+        $b_offers = ($db->mysqli_prepared_query($query, "ss", array('B', $number)));
+        $l_offers = ($db->mysqli_prepared_query($query, "ss", array('L', $number)));
+        $d_offers = ($db->mysqli_prepared_query($query, "ss", array('D', $number)));
 
         /*Give tab queries*/
         $query = file_get_contents("Restaurant-API/database/sql/give/info/offer_for_date.sql");
@@ -119,5 +120,7 @@ $app->get("/status/info", function (Request $request, Response $response) {
         );
         $out->write(json_encode($json));
     }
+
+
     return $response->withStatus($status);
 });

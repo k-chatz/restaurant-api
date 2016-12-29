@@ -27,14 +27,14 @@ function jwt($data, $delay, $duration)
     return JWT::encode($payload, $secretKey, $algorithm);
 }
 
-function validate($jwtData, &$out)
+function validate($jwtData, &$out, &$user)
 {
     $status = 200;      // OK
     try {
         $db = new DbHandler();
         $query = file_get_contents("Restaurant-API/database/sql/user/get/validate.sql");
-        $result = $db->mysqli_prepared_query($query, "s", array($jwtData->username));
-        if (empty($result)) {
+        $user = $db->mysqli_prepared_query($query, "s", array($jwtData->username));
+        if (empty($user)) {
             $status = 401;              // Unauthorized
             $out->write(json_encode(handleError("User Not Found!", "Database", $status)));
         }
@@ -45,9 +45,10 @@ function validate($jwtData, &$out)
     return $status;
 }
 
-function authStatus(&$request, &$response, &$tokenData)
+function authStatus(&$request, &$response, &$tokenData, &$user)
 {
     global $config;
+    $user = null;
     $out = $response->getBody();
     $authHeader = $request->getHeader('authorization')[0];
 
@@ -59,7 +60,7 @@ function authStatus(&$request, &$response, &$tokenData)
                 $token = JWT::decode($jwt, $secretKey, [$config->get('jwt')->get('algorithm')]);
                 /*Validate user at database with token data.*/
                 $tokenData = $token->data;
-                return validate($token->data, $out);
+                return validate($token->data, $out, $user);
             } catch (Exception $e) {
                 $out->write(json_encode(handleError($e->getMessage(), "Json Web Token", $e->getCode())));
                 return 401;                 // Unauthorized
@@ -119,9 +120,12 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
                         $user['name'] = $name;
                         $user['picture'] = $picture;
                     }
+                    $jwtData = [
+                        'username' => $username
+                    ];
                     $outputJson = [
                         'userIsNew' => false,
-                        'jwt' => jwt($user, 0, $jwtDuration)
+                        'jwt' => jwt($jwtData, 0, $jwtDuration)
                     ];
                     $out->write(json_encode($outputJson));
                 } else {
@@ -132,12 +136,7 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
 
                     if (!empty($result) && $result[0] > 0) {
                         $jwtData = [
-                            'username' => $username,
-                            'name' => $name,
-                            'number' => null,
-                            'role' => 'V',
-                            'picture' => $picture,
-                            'gender' => $gender
+                            'username' => $username
                         ];
                         $outputJson = [
                             'userIsNew' => true,
@@ -165,6 +164,7 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
         }
     } else {
         $status = 400;                      // Bad Request
+        $out->write(json_encode(handleError("Bad Request", "API", $status)));
     }
     return $response->withStatus($status);
 });
