@@ -22,6 +22,7 @@ function handleError($message, $type, $code){
 }
 
 require_once 'user.php';
+require_once 'menu.php';
 require_once 'status.php';
 require_once 'take.php';
 require_once 'give.php';
