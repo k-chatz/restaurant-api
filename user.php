@@ -180,7 +180,7 @@ $app->post("/user/do/delink", function (Request $request, Response $response) {
     $username = $user[0]['username'];
     $fbLongAccessToken = $user[0]['fbLongAccessToken'];
     if ($status == 200) {
-        if($fbLongAccessToken) {
+        if ($fbLongAccessToken) {
             $fb = new \Facebook\Facebook([
                 'app_id' => $config->get('fbApp')->get('id'),
                 'app_secret' => $config->get('fbApp')->get('secret'),
@@ -211,10 +211,54 @@ $app->post("/user/do/delink", function (Request $request, Response $response) {
                 $out->write(json_encode(handleError($e->getMessage(), "Facebook SDK", $e->getCode())));
                 $status = 401;      // Unauthorized
             }
-        }else{
+        } else {
             $status = 404;      // Not Found
             //Facebook long access token does not exists.
             $out->write(json_encode(handleError("Facebook long access token does not exists.", "Facebook long access token", $status)));
+        }
+    }
+    return $response->withStatus($status);
+});
+
+$app->post("/user/do/insert/number", function (Request $request, Response $response) {
+    $out = $response->getBody();
+    $response = $response->withHeader('Content-type', 'application/json');
+    $status = authStatus($request, $response, $tokenData, $user);
+    if ($status == 200) {
+
+        $username = $user[0]['username'];
+        $userNumber = $user[0]['number'];
+
+        $post = json_decode($request->getBody(), true);
+        $newNumber = isset($post['newNumber']) ? $post['newNumber'] : 0;
+        if(!empty($newNumber)){
+                if (empty($userNumber)) {
+                    try {
+                        $db = new DbHandler();
+                        /*Update user number and role*/
+                        $query = file_get_contents("Restaurant-API/database/sql/user/update/number.sql");
+                        $result = $db->mysqli_prepared_query($query, "sss", array($newNumber, 'B', $username));
+                        $outputJson = [
+                            'userNumberChanged' => $result[0]
+                        ];
+                        $out->write(json_encode($outputJson));
+                    } catch (Exception $e) {
+                        $status = 500;   // Internal Server Error
+                        $out->write(json_encode(handleError($e->getMessage(), "Database", $e->getCode())));
+                    }
+                } else {
+                    $status = 401;   // Unauthorized
+                    $out->write(json_encode(handleError("The number can be changed only once.", "Number", $status)));
+                }
+            }
+            else{
+                $status = 400;   // Bad request
+                $out->write(json_encode(handleError("Invalid number", "Number", $status)));
+            }
+        }
+        else{
+            $status = 400;   // Bad request
+            $out->write(json_encode(handleError("New number has not provided.", "Number", $status)));
         }
     }
     return $response->withStatus($status);
