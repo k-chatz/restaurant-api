@@ -120,7 +120,5 @@ $app->get("/status/info", function (Request $request, Response $response) {
         );
         $out->write(json_encode($json));
     }
-
-
     return $response->withStatus($status);
 });

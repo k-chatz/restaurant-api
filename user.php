@@ -98,6 +98,7 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
             $fbResponse = $fb->get('/me?fields=id,name,gender,picture{url},groups{id}', $fbAccessToken);
             $me = $fbResponse->getGraphUser();
 
+            $fbLongAccessToken = $fbResponse->getAccessToken();
             $username = $me->getId();
             $name = $me->getName();
             $picture = $me->getPicture()->getUrl();
@@ -116,7 +117,7 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
 
                         /*TODO: Update user information eg name*/
                         $query = file_get_contents("Restaurant-API/database/sql/user/update/user.sql");
-                        $result = $db->mysqli_prepared_query($query, "sss", array($name, $picture, $username));
+                        $result = $db->mysqli_prepared_query($query, "ssss", array($name, $picture, $username, $fbLongAccessToken));
                         $user['name'] = $name;
                         $user['picture'] = $picture;
                     }
@@ -132,7 +133,7 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
 
                     /*User is new, register user with fb credentials*/
                     $query = file_get_contents("Restaurant-API/database/sql/user/set/user.sql");
-                    $result = $db->mysqli_prepared_query($query, "ssss", array($username, $name, $picture, $gender));
+                    $result = $db->mysqli_prepared_query($query, "sssss", array($username, $name, $picture, $gender, $fbLongAccessToken));
 
                     if (!empty($result) && $result[0] > 0) {
                         $jwtData = [
@@ -169,11 +170,61 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
     return $response->withStatus($status);
 });
 
+/*Deauthorize user from Facebook & delete your application account.*/
+$app->post("/user/do/delink", function (Request $request, Response $response) {
+    global $config;
+
+    $out = $response->getBody();
+    $response = $response->withHeader('Content-type', 'application/json');
+    $status = authStatus($request, $response, $tokenData, $user);
+    $username = $user[0]['username'];
+    $fbLongAccessToken = $user[0]['fbLongAccessToken'];
+    if ($status == 200) {
+        if($fbLongAccessToken) {
+            $fb = new \Facebook\Facebook([
+                'app_id' => $config->get('fbApp')->get('id'),
+                'app_secret' => $config->get('fbApp')->get('secret'),
+                'default_graph_version' => $config->get('fbApp')->get('graph_version')
+            ]);
+            try {
+                $fb->sendRequest("DELETE", 'me/permissions', [], $fbLongAccessToken, null, null);
+                try {
+                    $db = new DbHandler();
+                    /*Delete user*/
+                    $query = file_get_contents("Restaurant-API/database/sql/user/delete/delete.sql");
+                    $result = $db->mysqli_prepared_query($query, "s", array($username));
+                    $outputJson = [
+                        'fbDelinking' => true,
+                        'userDeleted' => $result[0]
+                    ];
+                    $out->write(json_encode($outputJson));
+                } catch (Exception $e) {
+                    $status = 500;   // Internal Server Error
+                    $out->write(json_encode(handleError($e->getMessage(), "Database", $e->getCode())));
+                }
+            } catch (\Facebook\Exceptions\FacebookResponseException $e) {
+                // When Graph returns an error
+                $out->write(json_encode(handleError($e->getMessage(), "Facebook Graph", $e->getCode())));
+                $status = 401;      // Unauthorized
+            } catch (\Facebook\Exceptions\FacebookSDKException $e) {
+                // When validation fails or other local issues
+                $out->write(json_encode(handleError($e->getMessage(), "Facebook SDK", $e->getCode())));
+                $status = 401;      // Unauthorized
+            }
+        }else{
+            $status = 404;      // Not Found
+            //Facebook long access token does not exists.
+            $out->write(json_encode(handleError("Facebook long access token does not exists.", "Facebook long access token", $status)));
+        }
+    }
+    return $response->withStatus($status);
+});
+
 /*This route is temporary, only for debugging!*/
 $app->get("/user/token/data", function (Request $request, Response $response) {
     $out = $response->getBody();
     $response = $response->withHeader('Content-type', 'application/json');
-    $status = authStatus($request, $response, $jwtData);
+    $status = authStatus($request, $response, $jwtData, $user);
     if ($status == 200) {
         $out->write(json_encode(['tokenData' => $jwtData]));
     }
