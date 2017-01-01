@@ -220,6 +220,7 @@ $app->post("/user/do/delink", function (Request $request, Response $response) {
     return $response->withStatus($status);
 });
 
+/*User insert number*/
 $app->post("/user/do/insert/number", function (Request $request, Response $response) {
     $out = $response->getBody();
     $response = $response->withHeader('Content-type', 'application/json');
@@ -232,6 +233,8 @@ $app->post("/user/do/insert/number", function (Request $request, Response $respo
         $post = json_decode($request->getBody(), true);
         $newNumber = isset($post['newNumber']) ? $post['newNumber'] : 0;
         if(!empty($newNumber)){
+            $newNumber = base64_decode($newNumber);
+            if($newNumber !== false) {
                 if (empty($userNumber)) {
                     try {
                         $db = new DbHandler();
