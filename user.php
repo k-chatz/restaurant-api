@@ -32,7 +32,7 @@ function validate($jwtData, &$out, &$user)
     $status = 200;      // OK
     try {
         $db = new DbHandler();
-        $query = file_get_contents("Restaurant-API/database/sql/user/get/validate.sql");
+        $query = file_get_contents("Restaurant-API/database/sql/user/get.sql");
         $user = $db->mysqli_prepared_query($query, "s", array($jwtData->username));
         if (empty($user)) {
             $status = 401;              // Unauthorized
@@ -74,6 +74,29 @@ function authStatus(&$request, &$response, &$tokenData, &$user)
     }
 }
 
+/*Get whole user information with a valid access token!*/
+$app->get("/user", function (Request $request, Response $response) {
+    $out = $response->getBody();
+    $response = $response->withHeader('Content-type', 'application/json');
+    $status = authStatus($request, $response, $jwtData, $user);
+    if ($status == 200) {
+        $outputJson = [
+            'user' => array(
+                'isNew' => false,
+                'username' => $user[0]['username'],
+                'name' => $user[0]['name'],
+                'number' => $user[0]['number'],
+                'role' => $user[0]['role'],
+                'picture' => $user[0]['picture'],
+                'gender' => $user[0]['gender'],
+                'fbLongAccessToken' => $user[0]['fbLongAccessToken']
+            )
+        ];
+        $out->write(json_encode($outputJson));
+    }
+    return $response->withStatus($status);
+});
+
 /*User Do Connect:
 Input:
     Facebook short access token from client
@@ -97,7 +120,6 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
         try {
             $fbResponse = $fb->get('/me?fields=id,name,gender,picture{url},groups{id}', $fbAccessToken);
             $me = $fbResponse->getGraphUser();
-
             $fbLongAccessToken = $fbResponse->getAccessToken();
             $username = $me->getId();
             $name = $me->getName();
@@ -109,14 +131,14 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
             $jwtDuration = 10000;
             try {
                 $db = new DbHandler();
-                $query = file_get_contents("Restaurant-API/database/sql/user/get/user.sql");
+                $query = file_get_contents("Restaurant-API/database/sql/user/get.sql");
                 $user = $db->mysqli_prepared_query($query, "s", array($username));
                 $user = empty($user) ? 0 : $user[0];
                 if ($user) {
                     if ($name != $user['name'] || $picture != $user['picture']) {
 
                         /*TODO: Update user information eg name*/
-                        $query = file_get_contents("Restaurant-API/database/sql/user/update/user.sql");
+                        $query = file_get_contents("Restaurant-API/database/sql/user/update.sql");
                         $result = $db->mysqli_prepared_query($query, "ssss", array($name, $picture, $username, $fbLongAccessToken));
                         $user['name'] = $name;
                         $user['picture'] = $picture;
@@ -125,14 +147,23 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
                         'username' => $username
                     ];
                     $outputJson = [
-                        'userIsNew' => false,
-                        'jwt' => jwt($jwtData, 0, $jwtDuration)
+                        'jwt' => jwt($jwtData, 0, $jwtDuration),
+                        'user' => array(
+                            'isNew' => false,
+                            'username' => $user['username'],
+                            'name' => $user['name'],
+                            'number' => $user['number'],
+                            'role' => $user['role'],
+                            'picture' => $user['picture'],
+                            'gender' => $user['gender'],
+                            'fbLongAccessToken' => $user['fbLongAccessToken']
+                        )
                     ];
                     $out->write(json_encode($outputJson));
                 } else {
 
                     /*User is new, register user with fb credentials*/
-                    $query = file_get_contents("Restaurant-API/database/sql/user/set/user.sql");
+                    $query = file_get_contents("Restaurant-API/database/sql/user/set.sql");
                     $result = $db->mysqli_prepared_query($query, "sssss", array($username, $name, $picture, $gender, $fbLongAccessToken));
 
                     if (!empty($result) && $result[0] > 0) {
@@ -140,8 +171,17 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
                             'username' => $username
                         ];
                         $outputJson = [
-                            'userIsNew' => true,
-                            'jwt' => jwt($jwtData, 0, $jwtDuration)
+                            'jwt' => jwt($jwtData, 0, $jwtDuration),
+                            'user' => array(
+                                'isNew' => true,
+                                'username' => $username,
+                                'name' => $name,
+                                'number' => null,
+                                'role' => 'V',
+                                'picture' => $picture,
+                                'gender' => $gender,
+                                'fbLongAccessToken' => $fbLongAccessToken
+                            )
                         ];
                     } else {
                         $status = 500;
@@ -191,7 +231,7 @@ $app->post("/user/do/delink", function (Request $request, Response $response) {
                 try {
                     $db = new DbHandler();
                     /*Delete user*/
-                    $query = file_get_contents("Restaurant-API/database/sql/user/delete/delete.sql");
+                    $query = file_get_contents("Restaurant-API/database/sql/user/delete.sql");
                     $result = $db->mysqli_prepared_query($query, "s", array($username));
                     $outputJson = [
                         'fbDelinking' => true,
@@ -239,18 +279,33 @@ $app->post("/user/do/insert/number", function (Request $request, Response $respo
                     try {
                         $db = new DbHandler();
                         /*Update user number and role*/
-                        $query = file_get_contents("Restaurant-API/database/sql/user/update/number.sql");
+                        $query = file_get_contents("Restaurant-API/database/sql/user/update_number.sql");
                         $result = $db->mysqli_prepared_query($query, "sss", array($newNumber, 'B', $username));
-                        $outputJson = [
-                            'userNumberChanged' => $result[0]
-                        ];
-                        $out->write(json_encode($outputJson));
+                        if($result[0]) {
+                            $outputJson = [
+                                'user' => array(
+                                    'isNew' => false,
+                                    'username' => $user[0]['username'],
+                                    'name' => $user[0]['name'],
+                                    'number' => $newNumber,
+                                    'role' => 'B',
+                                    'picture' => $user[0]['picture'],
+                                    'gender' => $user[0]['gender'],
+                                    'fbLongAccessToken' => $user[0]['fbLongAccessToken']
+                                )
+                            ];
+                            $out->write(json_encode($outputJson));
+                        }
+                        else{
+                            $status = 500;   // Internal Server Error
+                            $out->write(json_encode(handleError('Insertion of number fail!', "Database", $status)));
+                        }
                     } catch (Exception $e) {
                         $status = 500;   // Internal Server Error
                         $out->write(json_encode(handleError($e->getMessage(), "Database", $e->getCode())));
                     }
                 } else {
-                    $status = 401;   // Unauthorized
+                    $status = 403;   // Forbidden
                     $out->write(json_encode(handleError("The number can be changed only once.", "Number", $status)));
                 }
             }
