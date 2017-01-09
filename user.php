@@ -82,6 +82,7 @@ $app->get("/user", function (Request $request, Response $response) {
     if ($status == 200) {
         $outputJson = [
             'user' => array(
+                'accessToken' => $user[0]['accessToken'],
                 'isNew' => false,
                 'username' => $user[0]['username'],
                 'name' => $user[0]['name'],
@@ -101,7 +102,7 @@ $app->get("/user", function (Request $request, Response $response) {
 Input:
     Facebook short access token from client
 Output:
-    Json Web Token
+    User Object
 */
 $app->post("/user/do/connect", function (Request $request, Response $response) {
     global $config;
@@ -129,50 +130,47 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
 
             /*Set session duration between client and server*/
             $jwtDuration = 10000;
+            $jwtData = [
+                'username' => $username
+            ];
+            $accessToken = jwt($jwtData, 0, $jwtDuration);
             try {
                 $db = new DbHandler();
                 $query = file_get_contents("Restaurant-API/database/sql/user/get.sql");
                 $user = $db->mysqli_prepared_query($query, "s", array($username));
                 $user = empty($user) ? 0 : $user[0];
                 if ($user) {
-                    if ($name != $user['name'] || $picture != $user['picture']) {
-
-                        /*TODO: Update user information eg name*/
-                        $query = file_get_contents("Restaurant-API/database/sql/user/update.sql");
-                        $result = $db->mysqli_prepared_query($query, "ssss", array($name, $picture, $username, $fbLongAccessToken));
-                        $user['name'] = $name;
-                        $user['picture'] = $picture;
+                    $query = file_get_contents("Restaurant-API/database/sql/user/update.sql");
+                    $result = $db->mysqli_prepared_query($query, "sssss", array($name, $picture, $fbLongAccessToken, $accessToken, $username));
+                    if (!empty($result) && $result[0] > 0) {
+                        $outputJson = [
+                            'user' => array(
+                                'accessToken' => $accessToken,
+                                'isNew' => false,
+                                'username' => $username,
+                                'name' => $name,
+                                'number' => $user['number'],
+                                'role' => $user['role'],
+                                'picture' => $picture,
+                                'gender' => $gender,
+                                'fbLongAccessToken' => $user['fbLongAccessToken']
+                            )
+                        ];
+                    } else {
+                        $status = 500;
+                        $outputJson = handleError("User not updated!", "Database", $status);
                     }
-                    $jwtData = [
-                        'username' => $username
-                    ];
-                    $outputJson = [
-                        'jwt' => jwt($jwtData, 0, $jwtDuration),
-                        'user' => array(
-                            'isNew' => false,
-                            'username' => $user['username'],
-                            'name' => $user['name'],
-                            'number' => $user['number'],
-                            'role' => $user['role'],
-                            'picture' => $user['picture'],
-                            'gender' => $user['gender'],
-                            'fbLongAccessToken' => $user['fbLongAccessToken']
-                        )
-                    ];
                     $out->write(json_encode($outputJson));
                 } else {
 
                     /*User is new, register user with fb credentials*/
                     $query = file_get_contents("Restaurant-API/database/sql/user/set.sql");
-                    $result = $db->mysqli_prepared_query($query, "sssss", array($username, $name, $picture, $gender, $fbLongAccessToken));
+                    $result = $db->mysqli_prepared_query($query, "ssssss", array($username, $name, $picture, $gender, $fbLongAccessToken, $accessToken));
 
                     if (!empty($result) && $result[0] > 0) {
-                        $jwtData = [
-                            'username' => $username
-                        ];
                         $outputJson = [
-                            'jwt' => jwt($jwtData, 0, $jwtDuration),
                             'user' => array(
+                                'accessToken' => $accessToken,
                                 'isNew' => true,
                                 'username' => $username,
                                 'name' => $name,
@@ -281,9 +279,10 @@ $app->post("/user/do/insert/number", function (Request $request, Response $respo
                         /*Update user number and role*/
                         $query = file_get_contents("Restaurant-API/database/sql/user/update_number.sql");
                         $result = $db->mysqli_prepared_query($query, "sss", array($newNumber, 'B', $username));
-                        if($result[0]) {
+                        if (!empty($result) && $result[0] > 0) {
                             $outputJson = [
                                 'user' => array(
+                                    'accessToken' => $user[0]['accessToken'],
                                     'isNew' => false,
                                     'username' => $user[0]['username'],
                                     'name' => $user[0]['name'],
@@ -298,7 +297,7 @@ $app->post("/user/do/insert/number", function (Request $request, Response $respo
                         }
                         else{
                             $status = 500;   // Internal Server Error
-                            $out->write(json_encode(handleError('Insertion of number fail!', "Database", $status)));
+                            $out->write(json_encode(handleError('The card number insertion failed.', "Database", $status)));
                         }
                     } catch (Exception $e) {
                         $status = 500;   // Internal Server Error
@@ -311,12 +310,12 @@ $app->post("/user/do/insert/number", function (Request $request, Response $respo
             }
             else{
                 $status = 400;   // Bad request
-                $out->write(json_encode(handleError("Invalid number", "Number", $status)));
+                $out->write(json_encode(handleError("Invalid number.", "Number", $status)));
             }
         }
         else{
             $status = 400;   // Bad request
-            $out->write(json_encode(handleError("New number has not provided.", "Number", $status)));
+            $out->write(json_encode(handleError("The new card number has not provided.", "Number", $status)));
         }
     }
     return $response->withStatus($status);

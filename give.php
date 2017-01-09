@@ -15,7 +15,7 @@ $app->post("/give/offer", function (Request $request, Response $response) {
             $userRole = $user[0]['role'];
             if ($userRole == 'V') {
                 $status = 403;
-                $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
+                $out->write(json_encode(handleError("Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
                     $db = new DbHandler();
@@ -51,7 +51,7 @@ $app->post("/give/cancel", function (Request $request, Response $response) {
             $role = $user[0]['role'];
             if ($role == 'V') {
                 $status = 403;
-                $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
+                $out->write(json_encode(handleError("Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
                     $db = new DbHandler();
@@ -87,7 +87,7 @@ $app->post("/give/confirm", function (Request $request, Response $response) {
             $role = $user[0]['role'];
             if ($role == 'V') {
                 $status = 403;
-                $out->write(json_encode(handleError("Forbidden: Visitors don't have 'give' actions!", "User role", $status)));
+                $out->write(json_encode(handleError("Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
                     $db = new DbHandler();

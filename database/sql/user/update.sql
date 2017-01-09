@@ -1,1 +1,1 @@
-UPDATE `users` SET `name`= ?, `picture`= ?, `fbLongAccessToken`= ? WHERE (`username`= ?) LIMIT 1
+UPDATE `users` SET `name`= ?, `picture`= ?, `fbLongAccessToken`= ?, `accessToken` = ? WHERE (`username`= ?) LIMIT 1
