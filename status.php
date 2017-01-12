@@ -19,13 +19,9 @@ $app->get("/status/info", function (Request $request, Response $response) {
             $username = $tokenData->username;
             $number = $user[0]['number'];
             $role = $user[0]['role'];
-
             $db = new DbHandler();
 
-            /*TODO: Get only useful info for each user when is possible!*/
-
             $query = file_get_contents("Restaurant-API/database/sql/status/times.sql");
-
             $times = $db->select($query)[0];
             $b_sec_left = intval($times["b_sec_left"]);
             $l_sec_left = intval($times["l_sec_left"]);
@@ -116,7 +112,18 @@ $app->get("/status/info", function (Request $request, Response $response) {
 
             switch ($get['tab']) {
                 case 'menu':
-
+                    $query = file_get_contents("Restaurant-API/database/sql/menu/current_menu.sql");
+                    $b_menu = $db->mysqli_prepared_query($query, "s", array('B'));
+                    $l_menu = $db->mysqli_prepared_query($query, "s", array('L'));
+                    $d_menu = $db->mysqli_prepared_query($query, "s", array('D'));
+                    $menu = array(
+                        "menu" => array(
+                            "b" => $b_menu[0],
+                            "l" => $l_menu[0],
+                            "d" => $d_menu[0]
+                        )
+                    );
+                    $json = array_merge($json, $menu);
                     break;
                 case 'take':
                     $query = file_get_contents("Restaurant-API/database/sql/take/info/priority.sql");
