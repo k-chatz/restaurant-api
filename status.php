@@ -15,7 +15,7 @@ $app->get("/status/info", function (Request $request, Response $response) {
     $get = $request->getQueryParams();
     if (isset($get['tab']) && $get['tab'] != null) {
         $status = authStatus($request, $response, $tokenData, $user);
-        if ($status == 200) {
+        if ($status == OK) {
             $username = $tokenData->username;
             $number = $user[0]['number'];
             $role = $user[0]['role'];
@@ -151,7 +151,7 @@ $app->get("/status/info", function (Request $request, Response $response) {
             $out->write(json_encode($json));
         }
     } else {
-        $status = 400;
+        $status = BAD_REQUEST;
         $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);

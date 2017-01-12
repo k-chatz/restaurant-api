@@ -10,7 +10,7 @@ $app->post("/menu", function (Request $request, Response $response) {
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
         $status = authStatus($request, $response, $tokenData, $user);
-        if ($status == 200) {
+        if ($status == OK) {
             try {
                 $db = new DbHandler();
                 $query = file_get_contents("Restaurant-API/database/sql/menu/current_menu.sql");
@@ -23,12 +23,12 @@ $app->post("/menu", function (Request $request, Response $response) {
                 ];
                 $out->write(json_encode($output, true));
             } catch (Exception $e) {
-                $status = 500;                 // Internal Server Error
+                $status = INTERNAL_SERVER_ERROR;
                 $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
             }
         }
     } else {
-        $status = 400;
+        $status = BAD_REQUEST;
         $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
 

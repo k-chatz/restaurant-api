@@ -1,6 +1,13 @@
 <?php
 chdir(dirname(__DIR__));
 
+define("OK", 200);
+define("BAD_REQUEST", 400);
+define("UNAUTHORIZED", 401);
+define("FORBIDDEN", 403);
+define("NOT_FOUND", 404);
+define("INTERNAL_SERVER_ERROR", 500);
+
 require_once('vendor/autoload.php');
 require 'database/dbHandler.php';
 

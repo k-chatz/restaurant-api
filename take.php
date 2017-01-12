@@ -10,7 +10,7 @@ $app->post("/take/question", function (Request $request, Response $response) {
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
         $status = authStatus($request, $response, $tokenData, $user);
-        if ($status == 200) {
+        if ($status == OK) {
             $username = $tokenData->username;
             $role = $user[0]['role'];
             try {
@@ -26,12 +26,12 @@ $app->post("/take/question", function (Request $request, Response $response) {
                 $out->write(json_encode($output, true));
 
             } catch (Exception $e) {
-                $status = 500;                 // Internal Server Error
+                $status = INTERNAL_SERVER_ERROR;
                 $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
             }
         }
     } else {
-        $status = 400;
+        $status = BAD_REQUEST;
         $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
@@ -43,7 +43,7 @@ $app->post("/take/cancel", function (Request $request, Response $response) {
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
         $status = authStatus($request, $response, $tokenData, $user);
-        if ($status == 200) {
+        if ($status == OK) {
             $username = $tokenData->username;
             $role = $user[0]['role'];
             try {
@@ -57,7 +57,7 @@ $app->post("/take/cancel", function (Request $request, Response $response) {
                 ];
                 $out->write(json_encode($output, true));
             } catch (Exception $e) {
-                $status = 500;                 // Internal Server Error
+                $status = INTERNAL_SERVER_ERROR;
                 $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
             }
         }
@@ -74,7 +74,7 @@ $app->post("/take/confirm", function (Request $request, Response $response) {
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
         $status = authStatus($request, $response, $tokenData, $user);
-        if ($status == 200) {
+        if ($status == OK) {
             $username = $tokenData->username;
             $role = $user[0]['role'];
             try {
@@ -88,12 +88,12 @@ $app->post("/take/confirm", function (Request $request, Response $response) {
                 ];
                 $out->write(json_encode($output, true));
             } catch (Exception $e) {
-                $status = 500;                 // Internal Server Error
+                $status = INTERNAL_SERVER_ERROR;
                 $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
             }
         }
     } else {
-        $status = 400;
+        $status = BAD_REQUEST;
         $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
@@ -105,7 +105,7 @@ $app->post("/take/reject", function (Request $request, Response $response) {
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
         $status = authStatus($request, $response, $tokenData, $user);
-        if ($status == 200) {
+        if ($status == OK) {
             $username = $tokenData->username;
             $role = $user[0]['role'];
             try {
@@ -119,12 +119,12 @@ $app->post("/take/reject", function (Request $request, Response $response) {
                 ];
                 $out->write(json_encode($output, true));
             } catch (Exception $e) {
-                $status = 500;                 // Internal Server Error
+                $status = INTERNAL_SERVER_ERROR;
                 $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
             }
         }
     } else {
-        $status = 400;
+        $status = BAD_REQUEST;
         $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);

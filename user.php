@@ -29,18 +29,18 @@ function jwt($data, $delay, $duration)
 
 function validate($jwtData, &$out, &$user)
 {
-    $status = 200;      // OK
+    $status = OK;
     try {
         $db = new DbHandler();
         $query = file_get_contents("Restaurant-API/database/sql/user/get.sql");
         $user = $db->mysqli_prepared_query($query, "s", array($jwtData->username));
         if (empty($user)) {
-            $status = 401;              // Unauthorized
+            $status = UNAUTHORIZED;
             $out->write(json_encode(handleError("User Not Found!", "Database", $status)));
         }
     } catch (Exception $e) {
+        $status = INTERNAL_SERVER_ERROR;
         $out->write(json_encode(handleError($e->getMessage(), "Database", $e->getCode())));
-        $status = 500;                 // Internal Server Error
     }
     return $status;
 }
@@ -63,14 +63,14 @@ function authStatus(&$request, &$response, &$tokenData, &$user)
                 return validate($token->data, $out, $user);
             } catch (Exception $e) {
                 $out->write(json_encode(handleError($e->getMessage(), "Json Web Token", $e->getCode())));
-                return 401;                 // Unauthorized
+                return UNAUTHORIZED;
             }
         } else {
-            return 400;                     // Bad Request
+            return BAD_REQUEST;
         }
     } else {
         $out->write(json_encode(handleError('Token not found in request', "Json Web Token", 400)));
-        return 400;                         // Bad Request
+        return BAD_REQUEST;
     }
 }
 
@@ -106,7 +106,7 @@ Output:
 */
 $app->post("/user/do/connect", function (Request $request, Response $response) {
     global $config;
-    $status = 200;  // Ok
+    $status = OK;
     $out = $response->getBody();
     $response = $response->withHeader('Content-type', 'application/json');
     $post = json_decode($request->getBody(), true);
@@ -157,7 +157,7 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
                             )
                         ];
                     } else {
-                        $status = 500;
+                        $status = INTERNAL_SERVER_ERROR;
                         $outputJson = handleError("User not updated!", "Database", $status);
                     }
                     $out->write(json_encode($outputJson));
@@ -182,27 +182,26 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
                             )
                         ];
                     } else {
-                        $status = 500;
+                        $status = INTERNAL_SERVER_ERROR;
                         $outputJson = handleError("User not inserted!", "Database", $status);
                     }
 
                     $out->write(json_encode($outputJson));
                 }
             } catch (Exception $e) {
-                $status = 500;              // Internal Server Error
                 $out->write(json_encode(handleError($e->getMessage(), "Database", $e->getCode())));
             }
         } catch (\Facebook\Exceptions\FacebookResponseException $e) {
             // When Graph returns an error
             $out->write(json_encode(handleError($e->getMessage(), "Facebook Graph", $e->getCode())));
-            $status = 401;      // Unauthorized
+            $status = UNAUTHORIZED;
         } catch (\Facebook\Exceptions\FacebookSDKException $e) {
             // When validation fails or other local issues
             $out->write(json_encode(handleError($e->getMessage(), "Facebook SDK", $e->getCode())));
-            $status = 401;      // Unauthorized
+            $status = UNAUTHORIZED;
         }
     } else {
-        $status = 400;                      // Bad Request
+        $status = BAD_REQUEST;
         $out->write(json_encode(handleError("Bad Request", "API", $status)));
     }
     return $response->withStatus($status);
@@ -217,7 +216,7 @@ $app->post("/user/do/delink", function (Request $request, Response $response) {
     $status = authStatus($request, $response, $tokenData, $user);
     $username = $user[0]['username'];
     $fbLongAccessToken = $user[0]['fbLongAccessToken'];
-    if ($status == 200) {
+    if ($status == OK) {
         if ($fbLongAccessToken) {
             $fb = new \Facebook\Facebook([
                 'app_id' => $config->get('fbApp')->get('id'),
@@ -237,17 +236,17 @@ $app->post("/user/do/delink", function (Request $request, Response $response) {
                     ];
                     $out->write(json_encode($outputJson));
                 } catch (Exception $e) {
-                    $status = 500;   // Internal Server Error
+                    $status = INTERNAL_SERVER_ERROR;
                     $out->write(json_encode(handleError($e->getMessage(), "Database", $e->getCode())));
                 }
             } catch (\Facebook\Exceptions\FacebookResponseException $e) {
                 // When Graph returns an error
                 $out->write(json_encode(handleError($e->getMessage(), "Facebook Graph", $e->getCode())));
-                $status = 401;      // Unauthorized
+                $status = UNAUTHORIZED;
             } catch (\Facebook\Exceptions\FacebookSDKException $e) {
                 // When validation fails or other local issues
                 $out->write(json_encode(handleError($e->getMessage(), "Facebook SDK", $e->getCode())));
-                $status = 401;      // Unauthorized
+                $status = UNAUTHORIZED;
             }
         } else {
             $status = 404;      // Not Found
@@ -263,7 +262,7 @@ $app->post("/user/do/insert/number", function (Request $request, Response $respo
     $out = $response->getBody();
     $response = $response->withHeader('Content-type', 'application/json');
     $status = authStatus($request, $response, $tokenData, $user);
-    if ($status == 200) {
+    if ($status == OK) {
 
         $username = $user[0]['username'];
         $userNumber = $user[0]['number'];
@@ -296,25 +295,25 @@ $app->post("/user/do/insert/number", function (Request $request, Response $respo
                             $out->write(json_encode($outputJson));
                         }
                         else{
-                            $status = 500;   // Internal Server Error
+                            $status = INTERNAL_SERVER_ERROR;
                             $out->write(json_encode(handleError('The card number insertion failed.', "Database", $status)));
                         }
                     } catch (Exception $e) {
-                        $status = 500;   // Internal Server Error
+                        $status = INTERNAL_SERVER_ERROR;
                         $out->write(json_encode(handleError($e->getMessage(), "Database", $e->getCode())));
                     }
                 } else {
-                    $status = 403;   // Forbidden
+                    $status = FORBIDDEN;
                     $out->write(json_encode(handleError("The number can be changed only once.", "Number", $status)));
                 }
             }
             else{
-                $status = 400;   // Bad request
+                $status = BAD_REQUEST;
                 $out->write(json_encode(handleError("Invalid number.", "Number", $status)));
             }
         }
         else{
-            $status = 400;   // Bad request
+            $status = BAD_REQUEST;
             $out->write(json_encode(handleError("The new card number has not provided.", "Number", $status)));
         }
     }
@@ -326,7 +325,7 @@ $app->get("/user/token/data", function (Request $request, Response $response) {
     $out = $response->getBody();
     $response = $response->withHeader('Content-type', 'application/json');
     $status = authStatus($request, $response, $jwtData, $user);
-    if ($status == 200) {
+    if ($status == OK) {
         $out->write(json_encode(['tokenData' => $jwtData]));
     }
     return $response->withStatus($status);

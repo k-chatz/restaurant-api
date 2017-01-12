@@ -10,11 +10,11 @@ $app->post("/give/offer", function (Request $request, Response $response) {
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
         $status = authStatus($request, $response, $tokenData, $user);
-        if ($status == 200) {
+        if ($status == OK) {
             $number = $user[0]['number'];
             $userRole = $user[0]['role'];
             if ($userRole == 'V') {
-                $status = 403;
+                $status = FORBIDDEN;
                 $out->write(json_encode(handleError("Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
@@ -28,13 +28,13 @@ $app->post("/give/offer", function (Request $request, Response $response) {
                     ];
                     $out->write(json_encode($output, true));
                 } catch (Exception $e) {
-                    $status = 500;                 // Internal Server Error
+                    $status = INTERNAL_SERVER_ERROR;
                     $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
                 }
             }
         }
     } else {
-        $status = 400;
+        $status = BAD_REQUEST;
         $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
@@ -46,11 +46,11 @@ $app->post("/give/cancel", function (Request $request, Response $response) {
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
         $status = authStatus($request, $response, $tokenData, $user);
-        if ($status == 200) {
+        if ($status == OK) {
             $number = $user[0]['number'];
             $role = $user[0]['role'];
             if ($role == 'V') {
-                $status = 403;
+                $status = FORBIDDEN;
                 $out->write(json_encode(handleError("Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
@@ -64,13 +64,13 @@ $app->post("/give/cancel", function (Request $request, Response $response) {
                     ];
                     $out->write(json_encode($output, true));
                 } catch (Exception $e) {
-                    $status = 500;                 // Internal Server Error
+                    $status = INTERNAL_SERVER_ERROR;
                     $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
                 }
             }
         }
     } else {
-        $status = 400;
+        $status = BAD_REQUEST;
         $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
@@ -82,11 +82,11 @@ $app->post("/give/confirm", function (Request $request, Response $response) {
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
         $status = authStatus($request, $response, $tokenData, $user);
-        if ($status == 200) {
+        if ($status == OK) {
             $number = $user[0]['number'];
             $role = $user[0]['role'];
             if ($role == 'V') {
-                $status = 403;
+                $status = FORBIDDEN;
                 $out->write(json_encode(handleError("Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
@@ -127,13 +127,12 @@ $app->post("/give/confirm", function (Request $request, Response $response) {
                     }
                     $out->write(json_encode($output, true));
                 } catch (Exception $e) {
-                    $status = 500;                 // Internal Server Error
                     $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
                 }
             }
         }
     } else {
-        $status = 400;
+        $status = BAD_REQUEST;
         $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
@@ -145,11 +144,11 @@ $app->post("/give/reject", function (Request $request, Response $response) {
     $post = json_decode($request->getBody(), true);
     if (isset($post['meal']) && $post['meal'] != null) {
         $status = authStatus($request, $response, $tokenData, $user);
-        if ($status == 200) {
+        if ($status == OK) {
             $number = $user[0]['number'];
             $role = $user[0]['role'];
             if ($role == 'V') {
-                $status = 403;
+                $status = FORBIDDEN;
                 $out->write(json_encode(handleError("Visitors don't have 'give' actions!", "User role", $status)));
             } else {
                 try {
@@ -163,13 +162,13 @@ $app->post("/give/reject", function (Request $request, Response $response) {
                     ];
                     $out->write(json_encode($output, true));
                 } catch (Exception $e) {
-                    $status = 500;                 // Internal Server Error
+                    $status = INTERNAL_SERVER_ERROR;
                     $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
                 }
             }
         }
     } else {
-        $status = 400;
+        $status = BAD_REQUEST;
         $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
     }
     return $response->withStatus($status);
