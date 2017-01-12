@@ -127,6 +127,7 @@ $app->post("/give/confirm", function (Request $request, Response $response) {
                     }
                     $out->write(json_encode($output, true));
                 } catch (Exception $e) {
+                    $status = INTERNAL_SERVER_ERROR;
                     $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
                 }
             }

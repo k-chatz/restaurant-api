@@ -189,6 +189,7 @@ $app->post("/user/do/connect", function (Request $request, Response $response) {
                     $out->write(json_encode($outputJson));
                 }
             } catch (Exception $e) {
+                $status = INTERNAL_SERVER_ERROR;
                 $out->write(json_encode(handleError($e->getMessage(), "Database", $e->getCode())));
             }
         } catch (\Facebook\Exceptions\FacebookResponseException $e) {
