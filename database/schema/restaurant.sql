@@ -1,35 +1,19 @@
 /*
 Navicat MySQL Data Transfer
 
-Source Server         : Local Root
-Source Server Version : 50505
-Source Host           : localhost:3306
+Source Server         : vm-restaurant_copy
+Source Server Version : 50626
+Source Host           : 83.212.118.209:3306
 Source Database       : restaurant
 
 Target Server Type    : MYSQL
-Target Server Version : 50505
+Target Server Version : 50626
 File Encoding         : 65001
 
-Date: 2016-12-14 19:14:32
+Date: 2017-01-12 12:47:58
 */
 
 SET FOREIGN_KEY_CHECKS=0;
-
--- ----------------------------
--- Table structure for `meals`
--- ----------------------------
-DROP TABLE IF EXISTS `meals`;
-CREATE TABLE `meals` (
-  `meal` varchar(255) NOT NULL,
-  `type` varchar(1) NOT NULL,
-  `date` date NOT NULL,
-  KEY `fk_meals_meal_types` (`type`),
-  CONSTRAINT `fk_meals_meal_types` FOREIGN KEY (`type`) REFERENCES `meal_types` (`type`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of meals
--- ----------------------------
 
 -- ----------------------------
 -- Table structure for `meal_types`
@@ -50,6 +34,22 @@ INSERT INTO `meal_types` VALUES ('L', '13:00:00.0', '15:30:00.0');
 INSERT INTO `meal_types` VALUES ('D', '18:30:00.0', '20:15:00.0');
 
 -- ----------------------------
+-- Table structure for `meals`
+-- ----------------------------
+DROP TABLE IF EXISTS `meals`;
+CREATE TABLE `meals` (
+  `meal` varchar(255) NOT NULL,
+  `type` varchar(1) NOT NULL,
+  `date` date NOT NULL,
+  KEY `fk_meals_meal_types` (`type`),
+  CONSTRAINT `fk_meals_meal_types` FOREIGN KEY (`type`) REFERENCES `meal_types` (`type`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Records of meals
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for `numbers`
 -- ----------------------------
 DROP TABLE IF EXISTS `numbers`;
@@ -61,7 +61,7 @@ CREATE TABLE `numbers` (
 -- ----------------------------
 -- Records of numbers
 -- ----------------------------
-INSERT INTO `numbers` VALUES ('AN-111');
+INSERT INTO `numbers` VALUES ('A2020');
 INSERT INTO `numbers` VALUES ('Α1010');
 INSERT INTO `numbers` VALUES ('Α1040');
 INSERT INTO `numbers` VALUES ('Α1324');
@@ -108,11 +108,15 @@ CREATE TABLE `offers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
+-- Records of offers
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for `questions`
 -- ----------------------------
 DROP TABLE IF EXISTS `questions`;
 CREATE TABLE `questions` (
-  `q_username` varchar(15) NOT NULL,
+  `q_username` varchar(20) NOT NULL,
   `meal` varchar(1) NOT NULL,
   `date` date NOT NULL,
   `confirmed` tinyint(1) unsigned zerofill NOT NULL DEFAULT '0',
@@ -125,11 +129,15 @@ CREATE TABLE `questions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
+-- Records of questions
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for `reservations`
 -- ----------------------------
 DROP TABLE IF EXISTS `reservations`;
 CREATE TABLE `reservations` (
-  `q_username` varchar(15) NOT NULL,
+  `q_username` varchar(20) NOT NULL,
   `q_meal` varchar(1) NOT NULL,
   `q_date` date NOT NULL,
   `o_number` varchar(6) NOT NULL,
@@ -144,11 +152,15 @@ CREATE TABLE `reservations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
+-- Records of reservations
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for `settings`
 -- ----------------------------
 DROP TABLE IF EXISTS `settings`;
 CREATE TABLE `settings` (
-  `username` varchar(6) NOT NULL,
+  `username` varchar(20) NOT NULL,
   `notifications` tinyint(1) NOT NULL DEFAULT '0',
   KEY `fk_settings_users` (`username`),
   CONSTRAINT `fk_settings_users` FOREIGN KEY (`username`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -157,25 +169,6 @@ CREATE TABLE `settings` (
 -- ----------------------------
 -- Records of settings
 -- ----------------------------
-
--- ----------------------------
--- Table structure for `users`
--- ----------------------------
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE `users` (
-  `username` varchar(15) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `number` varchar(6) DEFAULT NULL,
-  `role` varchar(1) NOT NULL,
-  `picture` varchar(150) DEFAULT NULL,
-  `gender` varchar(6) DEFAULT NULL,
-  `lastconnect` datetime DEFAULT NULL,
-  PRIMARY KEY (`username`),
-  UNIQUE KEY `number_UNIQUE` (`number`) USING BTREE,
-  KEY `fk_users_user_roles` (`role`),
-  CONSTRAINT `fk_users_rooms` FOREIGN KEY (`number`) REFERENCES `numbers` (`number`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `fk_users_user_roles` FOREIGN KEY (`role`) REFERENCES `user_roles` (`role`) ON DELETE NO ACTION ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Table structure for `user_roles`
@@ -194,6 +187,32 @@ CREATE TABLE `user_roles` (
 INSERT INTO `user_roles` VALUES ('A');
 INSERT INTO `user_roles` VALUES ('B');
 INSERT INTO `user_roles` VALUES ('V');
+
+-- ----------------------------
+-- Table structure for `users`
+-- ----------------------------
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE `users` (
+  `username` varchar(20) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `number` varchar(6) DEFAULT NULL,
+  `role` varchar(1) NOT NULL,
+  `picture` varchar(300) DEFAULT NULL,
+  `gender` varchar(6) DEFAULT NULL,
+  `lastconnect` datetime DEFAULT NULL,
+  `created` datetime NOT NULL,
+  `fbLongAccessToken` longtext NOT NULL,
+  `accessToken` longtext NOT NULL,
+  PRIMARY KEY (`username`),
+  UNIQUE KEY `number_UNIQUE` (`number`) USING BTREE,
+  KEY `fk_users_user_roles` (`role`),
+  CONSTRAINT `fk_users_rooms` FOREIGN KEY (`number`) REFERENCES `numbers` (`number`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_users_user_roles` FOREIGN KEY (`role`) REFERENCES `user_roles` (`role`) ON DELETE NO ACTION ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Records of users
+-- ----------------------------
 DROP TRIGGER IF EXISTS `reservation1`;
 DELIMITER ;;
 CREATE TRIGGER `reservation1` AFTER INSERT ON `offers` FOR EACH ROW BEGIN
