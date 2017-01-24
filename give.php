@@ -3,6 +3,20 @@
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 
+function doOReserve($number, $meal){
+    $db = new DbHandler();
+    $query = file_get_contents("Restaurant-API/database/sql/reservation/first_available_question.sql");
+    $q = $db->mysqli_prepared_query($query, "s", array($meal));
+    if(!empty($q)){
+        $query = file_get_contents("Restaurant-API/database/sql/reservation/insert.sql");
+        $result = $db->mysqli_prepared_query($query, "ssssss",
+            array($q[0]['q_username'], $q[0]['meal'], $q[0]['date'], $number, $meal, $q[0]['date']));
+        return !empty($result) && $result[0] > 0;
+    }else{
+        return false;
+    }
+}
+
 /*Give*/
 $app->post("/give/offer", function (Request $request, Response $response) {
     $out = $response->getBody();
@@ -21,6 +35,7 @@ $app->post("/give/offer", function (Request $request, Response $response) {
                     $db = new DbHandler();
                     $query = file_get_contents("Restaurant-API/database/sql/give/offer/new_offer.sql");
                     $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
+
                     $output = [
                         "give" => array(
                             "offer" => $result
@@ -103,6 +118,11 @@ $app->post("/give/confirm", function (Request $request, Response $response) {
                             case 0: /*Undefined - Update value of 'confirmed' field and set to true for record with specific date-meal*/
                                 $query = file_get_contents("Restaurant-API/database/sql/give/confirm/planned_set.sql");
                                 $result = $db->mysqli_prepared_query($query, "sss", array($number, $post['meal'], $post['date']))[0];
+
+                                if(!empty($result) && $result > 0){
+                                    doOReserve($number,$post['meal']);
+                                }
+
                                 break;
                             case 1: /*Checked - Delete record with specific date-meal (cancel query)*/
                                 $query = file_get_contents("Restaurant-API/database/sql/give/cancel/planned_cancel.sql");

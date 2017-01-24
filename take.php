@@ -3,6 +3,20 @@
 use \Psr\Http\Message\ServerRequestInterface as Request;
 use \Psr\Http\Message\ResponseInterface as Response;
 
+function doQReserve($username, $meal){
+    $db = new DbHandler();
+    $query = file_get_contents("Restaurant-API/database/sql/reservation/first_available_offer.sql");
+    $o = $db->mysqli_prepared_query($query, "ss", array($username, $meal));
+    if(!empty($o)){
+        $query = file_get_contents("Restaurant-API/database/sql/reservation/insert.sql");
+        $result = $db->mysqli_prepared_query($query, "ssssss",
+            array($username, $meal, $o[0]['date'], $o[0]['o_number'], $meal, $o[0]['date']));
+        return !empty($result) && $result[0] > 0;
+    }else{
+        return false;
+    }
+}
+
 /*Take*/
 $app->post("/take/question", function (Request $request, Response $response) {
     $out = $response->getBody();
@@ -20,7 +34,8 @@ $app->post("/take/question", function (Request $request, Response $response) {
 
                 $output = [
                     "take" => array(
-                        "question" => $result
+                        "question" => $result,
+                        "reserve" => doQReserve($username, $post['meal'])
                     )
                 ];
                 $out->write(json_encode($output, true));
