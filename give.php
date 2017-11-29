@@ -194,3 +194,43 @@ $app->post("/give/reject", function (Request $request, Response $response) {
     }
     return $response->withStatus($status);
 });
+
+$app->post("/give/confirm/all", function (Request $request, Response $response) {
+    $out = $response->getBody();
+    $response = $response->withHeader('Content-type', 'application/json');
+    $post = json_decode($request->getBody(), true);
+    if (isset($post['meal']) && $post['meal'] != null) {
+        $status = authStatus($request, $response, $tokenData, $user);
+        if ($status == OK) {
+            $number = $user[0]['number'];
+            $role = $user[0]['role'];
+            if ($role == 'V') {
+                $status = FORBIDDEN;
+                $out->write(json_encode(handleError("Visitors don't have 'give' actions!", "User role", $status)));
+            } else {
+                try {
+                    $db = new DbHandler();
+
+
+                    $query = file_get_contents("Restaurant-API/database/sql/give/cancel/cancel.sql");
+                    $result = $db->mysqli_prepared_query($query, "ss", array($number, $post['meal']))[0];
+                    $output = [
+                        "give" => array(
+                            "reject" => $result
+                        )
+                    ];
+
+
+                    $out->write(json_encode($output, true));
+                } catch (Exception $e) {
+                    $status = INTERNAL_SERVER_ERROR;
+                    $out->write(json_encode(handleError($e->getMessage(), "Database", $status)));
+                }
+            }
+        }
+    } else {
+        $status = BAD_REQUEST;
+        $out->write(json_encode(handleError('Bad Request', "HTTP", $status)));
+    }
+    return $response->withStatus($status);
+});

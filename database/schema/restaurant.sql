@@ -1,19 +1,31 @@
 /*
 Navicat MySQL Data Transfer
 
-Source Server         : vm-restaurant_copy
-Source Server Version : 50626
-Source Host           : 83.212.118.209:3306
+Source Server         : Local Root
+Source Server Version : 50505
+Source Host           : localhost:3306
 Source Database       : restaurant
 
 Target Server Type    : MYSQL
-Target Server Version : 50626
+Target Server Version : 50505
 File Encoding         : 65001
 
-Date: 2017-01-12 12:47:58
+Date: 2017-02-05 17:58:42
 */
 
 SET FOREIGN_KEY_CHECKS=0;
+
+-- ----------------------------
+-- Table structure for `meals`
+-- ----------------------------
+DROP TABLE IF EXISTS `meals`;
+CREATE TABLE `meals` (
+  `meal` varchar(255) NOT NULL,
+  `type` varchar(1) NOT NULL,
+  `date` date NOT NULL,
+  KEY `fk_meals_meal_types` (`type`),
+  CONSTRAINT `fk_meals_meal_types` FOREIGN KEY (`type`) REFERENCES `meal_types` (`type`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Table structure for `meal_types`
@@ -34,22 +46,6 @@ INSERT INTO `meal_types` VALUES ('L', '13:00:00.0', '15:30:00.0');
 INSERT INTO `meal_types` VALUES ('D', '18:30:00.0', '20:15:00.0');
 
 -- ----------------------------
--- Table structure for `meals`
--- ----------------------------
-DROP TABLE IF EXISTS `meals`;
-CREATE TABLE `meals` (
-  `meal` varchar(255) NOT NULL,
-  `type` varchar(1) NOT NULL,
-  `date` date NOT NULL,
-  KEY `fk_meals_meal_types` (`type`),
-  CONSTRAINT `fk_meals_meal_types` FOREIGN KEY (`type`) REFERENCES `meal_types` (`type`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of meals
--- ----------------------------
-
--- ----------------------------
 -- Table structure for `numbers`
 -- ----------------------------
 DROP TABLE IF EXISTS `numbers`;
@@ -61,7 +57,7 @@ CREATE TABLE `numbers` (
 -- ----------------------------
 -- Records of numbers
 -- ----------------------------
-INSERT INTO `numbers` VALUES ('A2020');
+INSERT INTO `numbers` VALUES ('AN-111');
 INSERT INTO `numbers` VALUES ('Α1010');
 INSERT INTO `numbers` VALUES ('Α1040');
 INSERT INTO `numbers` VALUES ('Α1324');
@@ -108,10 +104,6 @@ CREATE TABLE `offers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Records of offers
--- ----------------------------
-
--- ----------------------------
 -- Table structure for `questions`
 -- ----------------------------
 DROP TABLE IF EXISTS `questions`;
@@ -127,10 +119,6 @@ CREATE TABLE `questions` (
   CONSTRAINT `fk_questions_meal_types` FOREIGN KEY (`meal`) REFERENCES `meal_types` (`type`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_questions_users` FOREIGN KEY (`q_username`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of questions
--- ----------------------------
 
 -- ----------------------------
 -- Table structure for `reservations`
@@ -152,10 +140,6 @@ CREATE TABLE `reservations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Records of reservations
--- ----------------------------
-
--- ----------------------------
 -- Table structure for `settings`
 -- ----------------------------
 DROP TABLE IF EXISTS `settings`;
@@ -165,28 +149,6 @@ CREATE TABLE `settings` (
   KEY `fk_settings_users` (`username`),
   CONSTRAINT `fk_settings_users` FOREIGN KEY (`username`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of settings
--- ----------------------------
-
--- ----------------------------
--- Table structure for `user_roles`
--- ----------------------------
-DROP TABLE IF EXISTS `user_roles`;
-CREATE TABLE `user_roles` (
-  `role` varchar(1) NOT NULL,
-  PRIMARY KEY (`role`),
-  UNIQUE KEY `role_UNIQUE` (`role`),
-  KEY `role` (`role`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Records of user_roles
--- ----------------------------
-INSERT INTO `user_roles` VALUES ('A');
-INSERT INTO `user_roles` VALUES ('B');
-INSERT INTO `user_roles` VALUES ('V');
 
 -- ----------------------------
 -- Table structure for `users`
@@ -211,217 +173,19 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Records of users
+-- Table structure for `user_roles`
 -- ----------------------------
-DROP TRIGGER IF EXISTS `reservation1`;
-DELIMITER ;;
-CREATE TRIGGER `reservation1` AFTER INSERT ON `offers` FOR EACH ROW BEGIN
-DECLARE done INT DEFAULT FALSE;
-DECLARE Username VARCHAR (15);
-DECLARE Date date;
-DECLARE Meal VARCHAR (1);
-DECLARE Moment DATETIME DEFAULT NOW();
+DROP TABLE IF EXISTS `user_roles`;
+CREATE TABLE `user_roles` (
+  `role` varchar(1) NOT NULL,
+  PRIMARY KEY (`role`),
+  UNIQUE KEY `role_UNIQUE` (`role`),
+  KEY `role` (`role`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-DECLARE c_first_available_question CURSOR FOR SELECT
-	q.q_username,
-	q.date,
-	q.meal,
-	q.moment
-FROM
-	questions AS q
-LEFT JOIN reservations AS r ON r.q_username = q.q_username
-AND r.q_date = q.date
-AND r.q_meal = q.meal
-
-WHERE
-r.q_username IS NULL
-AND r.q_date IS NULL
-AND r.q_meal IS NULL
-
-AND
-q.date = (
-	CASE
-	WHEN q.meal = 'B' THEN
-	IF (TIMEDIFF('09:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
-	WHEN q.meal = 'L' THEN
-	IF (TIMEDIFF('15:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
-	WHEN q.meal = 'D' THEN
-		IF (TIMEDIFF('20:15:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
-	END
-)
-
-AND q.meal = NEW.meal
-ORDER BY q.moment ASC
-LIMIT 1;
-
-DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-
-OPEN c_first_available_question;
-
-FETCH c_first_available_question INTO Username, Date, Meal, Moment;
-
-IF done = FALSE AND NEW.confirmed = TRUE THEN
-	INSERT INTO `reservations`
-VALUES(
-		Username,
-        		Meal,
-		Date,
-		NEW.o_number,
-        		Meal,
-		Date,
-		NOW()
-	);
-END IF;
-
-CLOSE c_first_available_question;
-END
-;;
-DELIMITER ;
-DROP TRIGGER IF EXISTS `reservation2`;
-DELIMITER ;;
-CREATE TRIGGER `reservation2` AFTER UPDATE ON `offers` FOR EACH ROW BEGIN
-DECLARE done INT DEFAULT FALSE;
-DECLARE Username VARCHAR (15);
-DECLARE Date date;
-DECLARE Meal VARCHAR (1);
-DECLARE Moment DATETIME DEFAULT NOW();
-
-DECLARE c_first_available_question CURSOR FOR SELECT
-	q.q_username,
-	q.date,
-	q.meal,
-	q.moment
-FROM
-	questions AS q
-LEFT JOIN reservations AS r ON r.q_username = q.q_username
-AND r.q_date = q.date
-AND r.q_meal = q.meal
-
-WHERE
-r.q_username IS NULL
-AND r.q_date IS NULL
-AND r.q_meal IS NULL
-
-AND
-q.date = (
-	CASE
-	WHEN q.meal = 'B' THEN
-	IF (TIMEDIFF('09:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
-	WHEN q.meal = 'L' THEN
-	IF (TIMEDIFF('15:30:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
-	WHEN q.meal = 'D' THEN
-		IF (TIMEDIFF('20:15:00.0', CURRENT_TIME) <= 0, ADDDATE(CURRENT_DATE, INTERVAL 1 DAY), CURRENT_DATE)
-	END
-)
-
-AND q.meal = NEW.meal
-ORDER BY q.moment ASC
-LIMIT 1;
-
-DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-
-OPEN c_first_available_question;
-
-FETCH c_first_available_question INTO Username, Date, Meal, Moment;
-
-IF done = FALSE AND NEW.confirmed = TRUE THEN
-	INSERT INTO `reservations`
-VALUES(
-		Username,
-        		Meal,
-		Date,
-		NEW.o_number,
-        		Meal,
-		Date,
-		NOW()
-	);
-END IF;
-
-CLOSE c_first_available_question;
-END
-;;
-DELIMITER ;
-DROP TRIGGER IF EXISTS `reservations`;
-DELIMITER ;;
-CREATE TRIGGER `reservations` AFTER INSERT ON `questions` FOR EACH ROW BEGIN
-DECLARE done INT DEFAULT FALSE;
-
-DECLARE Number VARCHAR (6);
-DECLARE Date date;
-DECLARE Confirmed tinyint(1);
-DECLARE Moment DATETIME DEFAULT NOW();
-
-DECLARE Q_STEP_1 CURSOR FOR SELECT
-	o.o_number,
-	o.date,
-	o.confirmed,
-	o.moment
-FROM
-	offers AS o
-LEFT JOIN reservations AS r ON r.o_number = o.o_number
-AND r.o_date = o.date
-AND r.o_meal = o.meal
-LEFT JOIN users AS u ON u.number = o.o_number
-WHERE
-	(
-		r.o_number IS NULL
-		AND r.o_date IS NULL
-		AND r.o_meal IS NULL
-	)
-AND u.username != NEW.q_username
-AND (
-	CASE
-	WHEN o.meal = 'B' THEN
-
-	IF (
-		TIMEDIFF('09:30:00.0', TIME(NOW())) < 0,
-		o.date = ADDDATE(CURRENT_DATE, INTERVAL 1 DAY),
-		o.date = CURRENT_DATE
-	)
-	WHEN o.meal = 'L' THEN
-
-	IF (
-		TIMEDIFF('15:30:00.0', TIME(NOW())) < 0,
-		o.date = ADDDATE(CURRENT_DATE, INTERVAL 1 DAY),
-		o.date = CURRENT_DATE
-	)
-	WHEN o.meal = 'D' THEN
-
-	IF (
-		TIMEDIFF('20:15:00.0', TIME(NOW())) < 0,
-		o.date = ADDDATE(CURRENT_DATE, INTERVAL 1 DAY),
-		o.date = CURRENT_DATE
-	)
-	END
-)
-AND o.meal = NEW.meal
-AND o.confirmed = 1
-ORDER BY
-	o.moment ASC
-LIMIT 1;
-
-DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-
-OPEN Q_STEP_1;
-
-FETCH Q_STEP_1 INTO Number, Date, Confirmed, Moment;
-
-IF done = FALSE THEN
-
-INSERT INTO `reservations`  VALUES(
-		NEW.q_username,
-        		NEW.meal,
-		NEW.date,
-		Number,
-        		NEW.meal,
-		Date,
-		NOW()
-	);
-
-END IF;
-
-CLOSE Q_STEP_1;
-
-END
-;;
-DELIMITER ;
+-- ----------------------------
+-- Records of user_roles
+-- ----------------------------
+INSERT INTO `user_roles` VALUES ('A');
+INSERT INTO `user_roles` VALUES ('B');
+INSERT INTO `user_roles` VALUES ('V');

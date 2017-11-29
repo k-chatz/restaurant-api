@@ -118,9 +118,21 @@ $app->get("/status/info", function (Request $request, Response $response) {
                     $d_menu = $db->mysqli_prepared_query($query, "s", array('D'));
                     $menu = array(
                         "menu" => array(
-                            "b" => $b_menu[0],
-                            "l" => $l_menu[0],
-                            "d" => $d_menu[0]
+                            "b" =>
+                                array(
+                                    "meal" => empty($b_menu[0]) ? null : $b_menu[0]['meal'],
+                                    "date" => empty($b_menu[0]) ? null : $b_menu[0]['date'],
+                                ),
+                            "l" =>
+                                array(
+                                    "meal" => empty($l_menu[0]) ? null : $l_menu[0]['meal'],
+                                    "date" => empty($l_menu[0]) ? null : $l_menu[0]['date'],
+                                ),
+                            "d" =>
+                                array(
+                                    "meal" => empty($d_menu[0]) ? null: $d_menu[0]['meal'],
+                                    "date" => empty($d_menu[0]) ? null : $d_menu[0]['date'],
+                                ),
                         )
                     );
                     $json = array_merge($json, $menu);
